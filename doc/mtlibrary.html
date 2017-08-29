@@ -1,0 +1,160 @@
+<HTML>
+
+<TITLE>The MT Library</TITLE>
+
+<BODY>
+
+<H2>THE MT LIBRARY</H2>
+
+<H3>Organization of code</H3>
+
+The code of the MT libraries is written in ANSI C++.
+The MT libraries are distributed open-source
+under the <A HREF="license.html">GNU General Public License</A>.
+
+<P>
+The MT directory is organized as follows:
+
+<PRE>
+                             MT
+                              |
+        +-------+-----+-------+------+-----+
+        |       |     |       |      |     |
+     include   src   demo    doc    lib   util
+        |       |     
+  +-----+       +-----+
+  |     |       |     |
+ krnl  ext     krnl  ext
+</PRE>
+
+<UL>
+<LI> <B>include</B>: 
+     header files for the MT libraries (kernel and extension).
+<LI> <B>src</B>: source code for the MT libraries (kernel and extension).
+<LI> <B>demo</B>: 
+     a few programs demonstrating applications of the MT; 
+     more programs will be added in the future.
+<LI> <B>data</B>: files containing some MTs and related features 
+     (tile errors, vertex normals).
+<LI> <B>doc</B>: documentation (these html pages).
+     The entry point is file <A HREF="index.html">index.html</A>.
+<LI> <B>lib</B>: libraries resulting from compiling the kernel
+     and the extension.
+<LI> <B>util</B>: some utility programs</A>.
+</UL>
+
+<!-- <P>
+The main directory is named <B>MT</B> here, while 
+its name may vary depending on the release you are using 
+(for Unix or for Windows).
+</P> -->
+
+<A NAME="SRCINCL">
+
+<H3>Source code and header files</H3>
+
+Subdirectory <B>src</B> and <B>include</B> are divided into:
+<OL>
+<LI><B>Kernel</B>:
+    MT, extractors, building interface, basic attribute tables.
+    <P>
+<LI><B>Extensions</B>:
+    specialized attributes and attribute tables, specialized building
+    interfaces, customized MTs, customized extraction conditions.
+    <P>
+</OL>
+
+<P>
+Kernel and Extensions are composed of a hierarchy of C++ classes which
+are compiled into two libraries.
+<P>
+
+<A NAME="KERNEL"></A>
+
+<H4>Kernel</H4>
+
+This is the standard MT library, containing classes for:
+<UL>
+<LI> The plain MT (without user-defined features), 
+     and the related building interface;
+<LI> The base class for extraction conditions;
+<LI> The extractors (global static, global dynamic, local extractor);
+<LI> Predefined attribute tables for storing ints, chars, floats, bits, and 
+     vectors of such types.
+</UL>
+
+<A NAME="EXTEN"></A>
+
+<H4>System extension</H4>
+
+This part contains classes implementing:
+<UL>
+<LI> Features that can be added to an MT: tile errors, field values,
+     vertex normals.
+<LI> Customized MTs with one or more of such features,
+     and related building interfaces.
+<LI> Specialized extractions conditions, some of them referring to MTs
+     having certain features.
+</UL>
+
+<P>
+
+The classes here are provided as examples.
+By using such examples as templates, you can define
+your own customized MTs, building interfaces, and extraction conditions.
+<P>
+
+<A NAME="DEMO"></A>
+
+<H3>Demos</H3>
+
+We provide a few programs demonstrating the use of the MT.
+<UL> 
+<LI> A <A HREF="demo2.html">demo</A> for terrain MTs.
+<LI> A <A HREF="demo1and3.html">demo</A> for two-dimensional MTs
+     representing the boundary of a solid object in 3D.
+</UL>
+Most programs use OpenGL and Glut for graphical display.
+More demos will be added in the future. 
+
+<A NAME="DOCUM"></A>
+
+<H3>Documentation</H3>
+
+A copy of this on-line documentation is provided with the MT libraries.
+
+<H3>MT files</H3>
+
+<P>
+MT files are text files containing an MT and its attributes.
+<UL>
+<LI>Some sample MTs, sufficient for running the demos,
+are included within the MT libraries
+(within sub-directories of directory <B>demo</B>).
+<LI>More MTs can be downloaded separately and put into
+directory <B>data</B>.
+</UL>
+</P>
+
+<A NAME="UTIL"></A>
+
+<H3>Utilities</H3>
+
+We provide a few utility programs manipulating an MT:
+<UL>
+<LI>
+ for reversing the orientation of triangles in a two-dimemsional MT
+<LI>
+ for computing vertex normals in a two-dimemsional MT
+<LI>
+ for converting an MT file into either ASCII or BINARY format
+<LI>
+ for computing statistical information on an MT
+</UL>
+
+You can find more information on such utility programs
+<A HREF="util.html">here</A>.
+
+</BODY>
+
+</HTML>

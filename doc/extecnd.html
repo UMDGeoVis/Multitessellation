@@ -1,0 +1,441 @@
+<HTML>
+
+<TITLE>The MT Package - How to define extraction conditions</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (8) --><H2>HOW TO DEFINE EXTRACTION CONDITIONS</H2>
+
+A specific resolution condition or focus condition is a subclass of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>
+that implements function <TT>MT_EvalCond</TT>.
+<P>
+
+We distinguish between two types of conditions:
+<OL>
+<LI> conditions that do not assume any MT feature 
+<LI> conditions that apply just to MTs with certain features.
+</OL>
+
+<!-- (8.1) --><H3>Conditions that do not assume any MT feature</H3>
+
+Simply define a subclass of 
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT> and implement function
+<TT>MT_EvalCond</TT>.
+<P>
+
+Function <TT>MT_IsGood</TT> must be specialized if the condition requires some
+property on the MT (e.g., tiles and/or embedding space of a certain
+dimension).
+
+<!-- (8.2) --><H3>Conditions that require some MT feature</H3>
+
+We call <TT>YYY</TT> the feature required by a condition (e.g., <TT>YYY</TT> = tile
+error).
+Such condition must be evaluated on an MT <TT>m</TT> that belongs to
+a subclass of the abstract class <TT>WithYYYClass</TT>,
+defining the interface for that feature.
+<P>
+
+Function <TT>MT_EvalCond</TT>, called within the extractor, 
+has an <TT>MT_MultiTesselation</TT> among its arguments.
+The condition cannot access the functions of class <TT>WithYYYClass</TT>
+(accessing the attribute) through such argument, even
+if it points to <TT>m</TT> 
+(which is actually of a subclass of <TT>WithYYYClass</TT>).
+<P>
+
+Therefore, the condition contains inside it a pointer to an object of
+the abstract class <TT>WithYYYClass</TT>. 
+We call the constructor of the condition with an MT <TT>m</TT> of any
+subclass of <TT>WithYYYClass</TT>, which will be stored inside the condition
+into the above pointer.
+<P>
+
+The condition must be used only in an extractor created on the same 
+MT <TT>m</TT>. MT <TT>m</TT> is accessed in this way:
+<UL>
+<LI> the argument passed by the extractor to <TT>MT_EvalCond</TT> is used to
+     see <TT>m</TT> as an object of class <TT>MT_MultiTesselationClass</TT>.
+<LI> the internal copy is used to see <TT>m</TT> as an object of
+     <TT>WithYYYClass</TT>, in order to access the feature <TT>YYY</TT> of
+     <TT>m</TT>.
+</UL>
+
+<IMG ALIGN=MIDDLE SRC="GIF/class-c.gif" >
+
+<!-- (8.3) --><H3>Resolution Filter Conditions</H3>
+
+A typical resolution condition imposes that some feature of a tile is 
+within a given <B>threshold</B>. The feature may be:
+<UL>
+<LI> computed on-line within the condition (e.g., area of a triangle)
+<LI> obtained from the MT which implements it (e.g., tile error)
+</UL>
+
+The system provides a class, 
+called <TT><A HREF="exten.html#THRESHOLD">ThresholdClass</A></TT>, that, 
+given a tile <TT>t</TT> in an MT, computes a float value on <TT>t</TT>.
+Such value can be used within a resolution filter condition as a threshold
+to constrain some feature of tile <TT>t</TT>.
+<P>
+
+A resolution filter condition will be a subclass of 
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT> that:
+<UL>
+<LI> contains internally a pointer to an object of class 
+     <TT>ThresholdClass</TT>.
+<LI> implements function <TT>MT_EvalCond</TT> by comparing the tile feature 
+     with the value provided by the threshold.
+</UL>
+
+The constructor of the condition accepts a <TT>Threshold</TT>, thus we
+can get conditions that apply different types of thresholds to the same tile
+feature.
+<P>
+
+If the tile feature must be provided by the MT, the resolution filter
+needs to contain internally a pointer to the abstract class defining 
+the interface of the feature, and its constructor will also accept an
+object of (a subclass of) that class.
+
+<H4>An example</H4>
+
+This resolution filter condition applies a threshold on the approximation
+error of tiles.
+It must be used on MTs that are subclasses
+of <TT><A HREF="exten.html#WITHTILERR">MT_WithTileErrorClass</A></TT> 
+and implement the function <TT>MT_TileError</TT>.
+
+<PRE>
+typedef class TileErrFilterClass * TileErrFilter;
+
+class TileErrFilterClass : public MT_CondClass
+{
+  protected:
+  
+  /*  Explicit reference to the MT in order to access tile errors.  */             
+  WithTileError my_mt;
+
+  /*  The threshold imposed on tile errors.  */             
+  Threshold my_thr;
+
+  public:        
+
+  /*  Return 1 if the error of the tile is <= the threshold value for
+  that tile. Return 0 otherwise.  */             
+  int MT_EvalCond(MT_MultiTesselation m, MT_INDEX t, int flag)
+  {  return ( my_mt->TileError(t) < my_thr->ThresholdValue(m,t) );  }
+
+  /*  Create a condition given the reference MT m and the threshold tr to
+  be imposed on its tiles.  */             
+  TileErrFilterClass(WithTileErrorClass * m, Threshold tr)
+  {    my_mt = m;  my_thr = tr;  }
+};               
+</PRE>
+
+<H4>Predefined resolution filter conditions</H4>
+
+The system provides the following built-in filters:
+<UL>
+<LI> Thresholds giving:
+ <UL>
+ <LI>
+   the same value on any tile <TT>t</TT> (uniform threshold), see class
+   <TT><A HREF="exten.html#UNIFTHR"></A>UnifThresholdClass</TT>
+ <LI>
+   a value that depends on the distance of <TT>t</TT> 
+   from a given point, see class
+   <TT><A HREF="exten.html#PD2TRI">PDist2ThresholdOnTrianglesClass</A></TT>,
+   <TT><A HREF="exten.html#PD3TRI">PDist3ThresholdOnTrianglesClass</A></TT>
+   and 
+   <TT><A HREF="exten.html#PD3TETRA">PDist3ThresholdOnTetrahedraClass</A></TT>.
+ </UL>
+<LI> Resolution filter conditions applying a threshold to:
+ <UL>
+ <LI>
+   tile area (for triangles in 2D or 3D), see classes
+   <TT><A HREF="exten.html#AREA2TRI">TriangleArea2FilterClass</A></TT>
+   and
+   <TT><A HREF="exten.html#AREA3TRI">TriangleArea3FilterClass</A></TT>.
+ <LI>
+   tile error (for MTs with errors), see class
+   <TT><A HREF="exten.html#ERRFLT">TileErrFilterClass</A></TT>.
+ <LI>
+   radius of the circumcircle (for triangles in 2D or 3D), see classes
+   <TT><A HREF="exten.html#CIRCUM2TRI">Circumradius2FilterClass</A></TT> 
+   and
+   <TT><A HREF="exten.html#CIRCUM3TRI">Circumradius3FilterClass</A></TT>.
+ </UL>
+</UL>
+
+<!-- (8.4) --><H3>Focus conditions</H3>
+
+A typical focus condition considers a tile as active if it intersects a
+given entity in space.
+<P>
+
+We suggest to define focus conditions according to the following
+guidelines:
+
+<OL>
+<LI> Define a class <TT>EEEClass</TT> implementing the given entity 
+     (e.g., a point, a line, a box, a circle) with all the functions 
+     needed to access and manipulate it
+     (e.g., set/return the point coordinates, translate the point...).
+<LI> Define the condition as a subclass of <TT>EEEClass</TT>
+     and <TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+</OL>
+
+In the system, we have defined classes <TT>EEEClass</TT> which correspond
+to entities in arbitrary 
+dimensions with the dimension passed as an argument to the constructor.
+
+Some of the conditions derived from a class <TT>EEEClass</TT> constrain the
+corresponding entity to a certain dimension.
+
+They also may require that the MT has some feature.
+
+<H4>Strict and loose evaluation</H4>
+
+Within a multiresolution model (like the MT), a tile <TT>t</TT> may be in
+one of the following situations with respect to a spatial entity <TT>e</TT>:
+
+<OL>
+<LI> <TT>t</TT> intersects <TT>e</TT>
+<LI> <TT>t</TT> does not intersect <TT>e</TT>, but it is still possible that
+     another tile, representing 
+     the same object portion as <TT>t</TT> at a higher resolution,
+     intersects <TT>e</TT>
+<LI> <TT>t</TT> does not intersect <TT>e</TT>, and certainly no tile representing
+     the same object portion as <TT>t</TT> at a higher resolution may
+     intersect <TT>e</TT>
+</OL>
+
+Indeed, a tile <TT>t</TT> at low resolution may be at a certain distance
+from the object (due to a large geometric error in the approximation), thus
+it may not intersect <TT>e</TT>, even if the object portion prepresented by
+<TT>t</TT> intersects <TT>e</TT>.
+In this case typically another tile <TT>t'</TT> exists, which refines
+<TT>t</TT> at a higher resolution, such that <TT>t'</TT> intersect
+<TT>e</TT>.
+<P>
+
+The strict evaluation mode of <TT>MT_EvalCond</TT> discriminates between
+case 1 (tile considered as active) and cases 2,3 (tile considered as not
+active).
+It is used when evaluating the condition on the tiles of the extracted
+tesselation.
+Such tiles are already at the resolution desired by the application
+program.
+<P>
+
+The loose evaluation mode discriminates between cases 1,2 (tile considered
+as active) and case 3 (tile considered as not active).
+It is used for evaluating the condition inside the extraction algorithms.
+Such algorithms traverse also tiles which are not at the resolution desired
+by the application, thus it is reasonable to temporarily report a 
+possible intersection; the final decision between intersection
+or no intersection will be taken when the algorithm arrives at a sufficient
+resolution.
+<P>
+
+The following remarks are important:
+<UL>
+<LI> If a focus condition applies to an MT in which the dimension of
+     tiles is the same as the dimension of the embedding space,
+     then a tile is always at its proper spatial location, thus
+     the loose and strict evaluation mode coincide.
+<LI> The key for implementing the loose evaluation mode is the
+     presence of an approximation error associated which each tile
+     <TT>t</TT>.
+     Such error must provide an estimate of the distance of <TT>t</TT>
+     from the object.
+     The loose evaluation returns 0 (i.e., impossible intersection)
+     if the distance between <TT>t</TT> and 
+     the focus entity <TT>e</TT> is larger than the error; otherwise,
+     it returns 1 (i.e., existing or possible intersection).
+</UL>
+
+<H4>An example</H4>
+ 
+We define a focus condition for 2-dimensional MTs embedded in 3D,
+which returns true if a tile (i.e., a triangle) intersects a 
+three-dimensional box.
+In order to implement the loose evaluation mode, the condition
+requires MTs having tile errors associated with them.
+<P>
+
+We first define a general class for a box in <TT>d</TT>-dimensions,
+called <TT><A HREF="exten.html#BOX">BoxClass</A></TT>.
+
+<PRE>
+typedef class BoxClass * Box;
+
+class BoxClass
+{
+  protected:
+ 
+  /* Min and max coordinates of the box on each axis. Only the first d 
+     positions of the arrays will be used if box is in d-dimensions. */
+  float minF[MT_MAX_DIM];
+  float maxF[MT_MAX_DIM];
+
+  /* Number of coordinated of the embedding space. */
+  int b_dim;
+
+  public:
+
+  /*  Return the number of coordinates of this box  */
+  int BoxDim(void) {  return (b_dim);  }
+          
+  /*  Set the box position and dimensions. */
+  void SetBox (float * min_coord, float * max_coord);
+
+  /*  Specialized versions for 2- and 3-dimensional boxes  */
+  void SetBox (float x1, float y1, float x2, float y2);
+  void SetBox (float x1, float y1, float z1, float x2, float y2, float z2);
+
+  /*  Return the box geometry.  */
+  void TheBox (float ** min_coord, float ** max_coord);
+
+  /*  Specialized versions for 2- and 3-dimensional boxes  */
+   void TheBox (float *x1, float *y1, float *x2, float *y2);   
+   void TheBox (float *x1, float *y1, float *z1,
+                float *x2, float *y2, float *z2);
+   
+  /*  Create a d-dimensional box with the given min and max coordinates.  */
+  BoxClass(int d, float * min_coord, float * max_coord);
+
+  /*  Create a d-dimensional box of null size where both max and min
+      coordinates are all zeroes.  */
+   BoxClass(int d);
+};
+</PRE>
+
+Then, we define a focus condition using a 3-dimensional box
+(i.e., a cuboid) on 2-dimensional MTs embedded in a space of at least
+three dimensions.
+If the embedding space is more than 3-dimensional, only the first
+three vertex coordinates are considered (i.e., the tiles are
+projected into the <TT>x-y-z</TT> subspace).
+<P>
+
+A tile is active either if the interior of the tile intersects the box,
+or if the boundary of the tile touches the box.
+<P>
+
+This focus set must be applied to MTs that are subclasses
+of <TT>MT_WithTileErrorClass</TT> and implement the function
+<TT>MT_TileError</TT>.
+<P>
+
+The focus condition, called
+<TT><A HREF="exten.html#BOX3TRI">Box3FocusOnTrianglesClass</A></TT>,
+is a subclass of <TT><A HREF="exten.html#BOX">BoxClass</A></TT> and
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>. 
+It creates itself as a box with three dimensions, and its constructor needs
+an argument of type 
+<TT><A HREF="exten.html#WITHTILERR">MT_WithTileError</A></TT>.
+<P>
+
+The loose evaluation mode of <TT>MT_EvalCond</TT> is implemented by testing
+the intersection of the given tile with a box enlarged of an amount
+equal to the tile error.
+
+<PRE>
+typedef class Box3FocusOnTrianglesClass * Box3FocusOnTriangles;
+
+class Box3FocusOnTrianglesClass : public BoxClass, public MT_CondClass
+{
+
+  protected:
+   
+  /*  Explicit reference to the MT in order to access tile errors.  */
+  WithTileError my_mt;
+ 
+  public:
+
+  /*  Constructors. Parameter m is the reference MT.  */
+  Box3FocusOnTrianglesClass(WithTileError m,
+                            float * min_coord, float * max_coord)
+  : BoxClass(3, min_coord, max_coord)
+  {  my_mt = m;  }
+
+  Box3FocusOnTrianglesClass(WithTileError m, 
+                float x1, float y1, float z1, float x2, float y2, float z2)
+  : BoxClass(3)
+  {
+    SetBox(x1,y1,z1, x2,y2,z2);
+    my_mt = m;             
+  }   
+
+  /*  Implementation of abstract function from superclass MT_CondClass.  */
+  int MT_EvalCond(MT_MultiTesselation m, MT_INDEX t, int flag)
+  {
+    if (flag==MT_LOOSE)
+    {  ... expand the box of an amount equal to my_mt->TileError(t) ...  }
+    if (... triangle t intersects the box ...)  return 1;
+    return 0;
+  }
+              
+  /*  This condition requires 2-dimensional MTs embedded in at least 3D  */
+  int MT_IsGood(MT_MultiTesselation m)
+  {
+     if ( (m->MT_TileDim() != 2) || (m->MT_VertexDim() < 3) ) return 0;
+     return 1;
+  }
+
+};
+</PRE>
+
+<H4>Predefined focus conditions</H4>
+
+The system provides the following built-in focus conditions:
+<UL>
+<LI>
+ active tiles are those containing a given point, see classes 
+ <TT><A HREF="exten.html#POINT2TRI">Point2FocusOnTrianglesClass</A></TT>
+ and
+ <TT><A HREF="exten.html#POINT3TETRA">Point3FocusOnTetrahedraClass</A></TT>.
+<LI>
+ active tiles are those intersecting a given box 
+ (rectangle in 2D, cuboid in 3D), see classes 
+ <TT><A HREF="exten.html#BOX2TRI">Box2FocusOnTrianglesClass</A></TT>,
+ <TT><A HREF="exten.html#BOX3TRI">Box3FocusOnTrianglesClass</A></TT>
+ and
+ <TT><A HREF="exten.html#BOX3TETRA">Box3FocusOnTetrahedraClass</A></TT>.
+<LI>
+ active tiles are those intersecting a given line segment, see class
+ <TT><A HREF="exten.html#SEGMENT2TRI">Segment2FocusOnTrianglesClass</A></TT>.
+<LI>
+ active tiles are those intersecting the portion of space
+ above a given segment (used for point intervisibility tests 
+ on 2D fields representing terrains), see class
+ <TT><A HREF="exten.html#SEGMENT3FIELD">Segment3FocusOnTriFieldClass</A></TT>.
+<LI> active tiles are those intersecting a given polyline, see class
+ <TT><A HREF="exten.html#LINE2TRI">Line2FocusOnTrianglesClass</A></TT>.
+<LI>
+ active tiles are those intersecting a given range
+ (circle in 2D, sphere in 3D), see classes
+ <TT><A HREF="exten.html#RANGE2TRI">Range2FocusOnTrianglesClass</A></TT>,
+ <TT><A HREF="exten.html#RANGE3TRI">Range3FocusOnTrianglesClass</A></TT>
+ and
+ <TT><A HREF="exten.html#RANGE3TETRA">Range3FocusOnTetrahedraClass</A></TT>.
+<LI>
+ active tiles are those intersecting a given wedge
+ (angular sector in 2D), see class
+ <TT><A HREF="exten.html#WEDGE2TRI">Wedge2FocusOnTrianglesClass</A></TT>.
+<!-- rectangular pyramid in 3D, not implemented yet -->
+<LI>
+ active tiles are those that contain certain field values, see class
+ <TT><A HREF="exten.html#FIELDVALFCS">FieldValFocusClass</A></TT>.
+</UL>
+
+<!-------------------------------------------------------------------------->
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,115 @@
+<HTML>  
+
+<TITLE>The MT (Multi-Tesselation) Package - MT Utilities</TITLE>
+
+<BODY>
+
+<H1>MT Utilities</H1>
+
+A collection of utility programs for the MT.
+
+<H2>Reverse</H2>
+
+Program <TT>reverse</TT> reverses the orientation of an MT representing a
+surface in three dimensions.
+
+<UL>
+<LI>
+ Input: a two-dimemsional MT embedded in three dimension (triangles in 3D).
+<LI>
+ Output: a two-dimemsional MT embedded in three dimension (triangles in 3D).
+<LI>
+ Syntax: <TT>reverse input_mt output_mt</TT>
+</UL>
+
+The output MT is equal to the input MT, but all its triangles are reversed:
+if the three vertices of a triangle T are sorted as A,B,C in the inout MT, 
+then the vertices of T in the output MT are sorted as C,B,A.
+<P>
+
+This operation correspond to exchanging the inner and the outer sides
+of the surface represented by the MT .
+
+<H2>AddNorma</H2>
+Program <TT>addnorma</TT> computes vertex normals for an MT representing a
+surface in three dimensions.
+
+<UL>
+<LI>
+ Input: a two-dimemsional MT embedded in three dimensions (triangles in 3D).
+<LI>
+ Output: a float vector attribute table (with vector lenght = 3)
+ containing vertex normals for the given MT.
+<LI>
+ Syntax: <TT>addnorma mt_file normal_file</TT>
+</UL>
+
+Important: it is assumed that the tesselation at maximum resolution
+available in the MT contains all the vertices of the MT. This is true for
+Multi-Triangulation built through incremental insertion/deletion of
+vertices, and for those built through edge collapse provided that the vertex
+resulting from collapsing an edge coincides with one of the two edge
+endpoints. 
+<P>
+
+Vertex normals are computed on the tesselation at maximum resolution
+extracted from the MT.
+
+<H2>MTbinary and MTascii</H2>
+
+Programs <TT>mtbinary</TT> and <TT>mtascii</TT> convert an MT 
+into BINARY and ASCII format, respectively.
+
+<UL>
+<LI> Input: an MT.
+<LI> Output: the same MT written in binary/ascii format.
+<LI> Syntax: <TT>mtbinary input_mt output_mt</TT> and
+     <TT>mtascii input_mt output_mt</TT>
+</UL>
+
+<H2>Metadata</H2>
+
+Program <TT>metadata</TT> compute for an MT the statistics defined by the 
+<A HREF="http://visionair.ge.imati.cnr.it/ontologies/shapes/">Aim @
+Shape</A>:<BR>
+Mesh type: surface or volume,<BR>
+Number of vertices at maximum resolution,<BR>
+Number of tiles at maximum resolution,<BR>
+Number of vertices at minimum resolution,<BR>
+Number of tiles at minimum resolution,<BR>
+Granularity: number of tiles involved in a single modification
+to mesh resolution occurred during construction.
+  A smaller granularity means that the multiresolution mesh is able to
+  extract a wider variety of meshes at different resolutions.
+</P>
+
+<UL>
+<LI> Input: an MT.
+<LI> Output: statistical information, written to standard output.
+<LI> Syntax: <TT>metadata mt_file</TT>
+</UL>
+
+<H2>Statistics</H2>
+
+Program <TT>stats</TT> computes and prints statistical information
+about an MT.
+
+<UL>
+<LI> Input: an MT.
+<LI> Output: statistical information, written to standard output.
+<LI> Syntax: <TT>stats mt_file</TT>
+</UL>
+
+Statistical information includes: 
+total number of nodes, arcs, tiles and vertices in the MT;
+number of tiles and vertices in the tesselations at minimum and
+maximum resolution;
+ratio between the total number of MT tiles and the number of
+tiles at maximum resolution;
+number of old and new triangles of a node of the MT;
+number of incoming and outgoing arcs of a node of the MT;
+maximum lenght of a path in the MT.
+
+</BODY>
+
+</HTML>

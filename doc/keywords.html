@@ -1,0 +1,121 @@
+<HTML>  
+
+<TITLE>The MT (Multi-Tesselation) Package - Keywords</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (1) --><H1>KEYWORDS</H2>
+
+<!-- (1.1) --><H3>MT (Multi-Tesselation)</H3>
+
+A multiresolution model for spatial objects represented as
+<TT>k</TT>-dimensional simplicial complexes (here called tesselations)
+embedded in <TT>d</TT>-dimensional space, for generic <TT>k</TT> and
+<TT>d</TT>.
+
+<!-- (1.2) --><H3>Extractor</H3>
+
+An engine which extracts tesselations at variable resolution from an MT 
+according to user-defined requirements.
+<BR>
+
+An extractor can be either global (static or dynamic) or local.
+
+<!-- (1.3) --><H3>Extraction conditions</H3>
+
+User-defined functions used within an extractor for expressing:
+<UL>
+<LI> the resolution requirements that an extracted tesselation must
+     satisfy (<B>resolution filter condition</B>)
+     <P>
+<LI> a subset of tiles on which to focus the attention in generating
+     the extracted tesselation, e.g., those tiles lying within a certain
+     area of interest (<B>focus condition</B>)
+</UL>
+
+They are boolean functions answering the questions: "is the resolution of
+this tile sufficient?" and "is this tile an interesting one?", respectively.
+
+We call:
+<UL>
+<LI> <B>feasible tile</B> a tile satisfying the resolution filter condition
+<LI> <B>active tile</B> a tile satisfying the focus condition
+</UL>
+
+<!-- (1.4) --><H3>Global extractor</H3>
+
+It extracts a tesselation covering the whole object,
+such that the resolution filter condition is satisfied by every active tile:
+"The resolution of every interesting tile is sufficient". 
+The resolution of other tiles is as coarse as possible 
+compatibly with the constraint that active and non-active tiles
+must glue together with continuity into a tesselation.
+<P>
+
+A global extractor is either static or dynamic:
+<UL>
+<LI> a <B>static extractor</B> recomputes a new tesselation by scratch at 
+     each extraction query (represented by a resolution filter and a
+     focus condition);
+     <P>
+<LI> a <B>dynamic extractor</B> computes the solution of a new extraction 
+     query by modifying the solution of the previous query; convenient when
+     extraction conditions change gradually, and thus the new tesselation is
+     expected to be very close to the previous one.
+</UL>
+
+<!-- (1.5) --><H3>Local extractor</H3>
+
+It extracts a tesselation covering just the part of
+the object which is of interest for the focus condition (thus, a tesselation
+made up of active tiles only), such that all tiles in it are feasible.
+<BR>
+
+It is convenient when the area of interest is a small portion of the
+object.
+
+<!-- (1.6) --><H3>Building Interface</H3>
+
+An MT is built from the sequence of update operations performed on a 
+tesselation during an iterative process of refinement or coarsening.
+Examples are, for triangulations, refinement processes based on vertex 
+insertion, coarsening processes based on either edge collapse or
+vertex decimation.
+<P>
+
+The building interface provides a set of functions which must be called
+within a program for iterative refinement or coarsening of a tesselation,
+in order to build the corresponding MT.
+
+<!-- (1.7) --><H3>Attributes</H3>
+
+Additional information (beside tile vertices and vertex coordinates) that 
+can be associated with the tiles and the vertices of an MT.
+Attributes are application dependent. For instance: field values,
+approximation errors, surface normals, colors, etc.
+<P>
+
+Attributes remain attached to the vertices and tiles of tesselations
+extracted from an MT, and may be useful in processing such tesselations
+by the application programs (e.g., colors and normals for rendering).
+<BR>
+
+They may also be used within extraction conditions to decide when a tile
+is feasible (e.g., based on its approximation error) or active 
+(e.g., when it contains a certain field value).
+<P>
+
+Attributes can be explicitly stored in tables associated with an MT
+(see Attribute Table below), or derived from geometry (e.g., 
+bounding box, volume...)
+
+<!-- (1.8) --><H3>Attribute Table</H3>
+
+A structure which stores, for each vertex or tile of an MT, a value of a 
+certain type, representing the attribute of that vertex or tile.
+
+</BODY>
+
+</HTML>

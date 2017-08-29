@@ -1,0 +1,132 @@
+#***************************************************************************
+#The Multi-Tesselation (MT) version 1.0, 1999.
+#A dimension-independent package for the representation and manipulation of
+#spatial objects as simplicial complexes at multiple resolutions.
+#
+#Copyright (C) 1999 DISI - University of Genova, Italy.
+#Group of Geometric Modeling and Computer Graphics DISI.
+#Program written by Paola Magillo <magillo@disi.unige.it>.
+#DISI - University of Genova, Via Dodecaneso 35, 16146 Genova - ITALY.
+#
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation; either version 2
+#of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#***************************************************************************
+
+# ------------------------------------------------------------------------
+# MAKEFILE for generating the DEMO programs of the MT library
+# ------------------------------------------------------------------------
+
+# by Paola Magillo, DISI, Genova, 1999
+
+# ------------------------------------------------------------------------
+# Include directories
+# ------------------------------------------------------------------------
+
+# If this file is in directory MT/demo, you should not have to change this
+INCLDIR = -I../../include/krnl -I../../include/ext 
+
+# ------------------------------------------------------------------------
+# Flags
+# ------------------------------------------------------------------------
+
+# These flags should work on almost any system
+CFLAGS = -ansi -g $(INCLDIR)
+
+# ------------------------------------------------------------------------
+# Compiler
+# ------------------------------------------------------------------------
+
+# This must be the C++ compiler available on your system
+CC = g++
+
+# ------------------------------------------------------------------------
+# Graphic Libraries
+# ------------------------------------------------------------------------
+
+# This is the directory containing libX11.so libXmu.so libXext.so
+#XLIBDIR = /usr/X11R6/lib
+XLIBDIR = /usr/lib
+
+# These are the X libraries
+#XLIBS = -L$(XLIBDIR) -lXmu -lX11 -lXext -lXi
+XLIBS = -L$(XLIBDIR)  -lX11 -lXext
+ 
+# If your are using Mesa, this is the directory containing 
+# libMesaGL.so libMesaGLU.so
+# If your are using OpenGL, this is the directory containig 
+# libMesaGL.so libMesaGLU.so
+GLLIBDIR = /usr/X11R6/lib
+
+# [1] These are the OpenGL libraries if you are using Mesa 
+#     (mutually exclusive with [2])
+#GLLIBS = -L$(GLLIBDIR) -lMesaGL -lMesaGLU
+
+# [2] These are the OpenGL libraries if you are using OpenGL
+#     (mutually exclusive with [1])
+GLLIBS = -L$(GLLIBDIR) -lGL -lGLU
+
+# This is the Glut library (using the static library since the dynamic 
+# sometimes gives problems)
+GLUTLIBS = -L/usr/11R6/lib -lglut
+
+# These are all the graphic libraries
+GRAPHIC_LIBS = $(GLUTLIBS) $(GLLIBS) $(XLIBS)
+
+# This is the directory containing the subdirectory GL inside
+# (subdirectory GL is the one containing glut.h and gl.h)
+GRAPHIC_INCLUDE = -I/usr/X11R6/include
+
+# ------------------------------------------------------------------------
+# MT libraries
+# ------------------------------------------------------------------------
+
+# If this file is in directory MT/demo, you should not have to change this
+# You shuold have already have the files MT/libMT.so and MT/libMText.so
+# that come from compiling the kernel library and the extended library
+LIB_MT = -L../../lib/ -lMT
+LIB_MT_EXT = -L../../lib/ -lMText
+
+# ------------------------------------------------------------------------
+# Programs
+# ------------------------------------------------------------------------
+
+demo1: demo1.cpp demo1.h demo1vis.cpp
+	$(CC) $(CFLAGS) -o demo1 demo1.cpp demo1vis.cpp	\
+	-g $(INCLUDE) $(GRAPHIC_INCLUDE) $(GRAPHIC_LIBS)	\
+	$(LIB_MT) $(LIB_MT_EXT) -lm
+
+demo1static: demo1.cpp demo1.h demo1vis.cpp 
+	$(CC) $(CFLAGS) -o demo1static demo1.cpp demo1vis.cpp	\
+	../../lib/libMT.a ../../lib/libMText.a	\
+	-g $(INCLUDE) $(GRAPHIC_INCLUDE) $(GRAPHIC_LIBS) -lm
+
+demo1bis: demo1.cpp demo1.h demo1vis_bis.cpp
+	$(CC) $(CFLAGS) -o demo1bis demo1.cpp demo1vis_bis.cpp	\
+	-g $(INCLUDE) $(GRAPHIC_INCLUDE) $(GRAPHIC_LIBS)	\
+	$(LIB_MT) $(LIB_MT_EXT) -lm
+
+# ------------------------------------------------------------------------
+#
+# The following macros select the algorithm used for hidden wireframe mode:
+#  HIDDEN_ZBUF -> Draw filled faces and then edged with a changed
+#     depth range. Fast bu result is not always correct.
+#     (default in demo1)
+#  HIDDEN_BLACK -> Draw back-faced triangles filled in background color 
+#     and the edges of front-faced triangles in foreground color. 
+#     Only good for closed surfaces seen from outside.
+#     (not supported by demo2)
+#  HIDDEN_STENCIL -> Use stencil test. Always correct but slow.
+#     (default in demo2)
+#
+# ------------------------------------------------------------------------

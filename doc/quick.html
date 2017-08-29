@@ -1,0 +1,131 @@
+<HTML>  
+
+<TITLE>The MT (Multi-Tesselation) Package - Quick Guide</TITLE>
+
+<BODY>
+
+<H1>Quick Guide to the MT Package</H1>
+
+This is just a list of the activities you can tackle with the MT Package, 
+sorted by increasing complexity. 
+<BR>
+For more detailed instructions see the
+<A HREF="index.html#DOCUMENT">
+on-line documentation</A> (also included in the package). 
+
+<H2>See the demos</H2>
+
+Once you have downloaded and installed the MT Package, you can immediately 
+run the demos on the test datasets.
+Demos are contained in directory <TT>MT/demo</TT>:
+
+<UL>
+<LI>
+ For a demo to <B>fly over a terrain</B>, see the instructions
+ <A HREF="demo2.html"></A>here</A>.
+ <P>
+<LI>
+ For a demo to <B>use a magic lens on a 3D object</B>, see the instructions
+ <A HREF="demo1and3.html"></A>here</A>.    
+</UL>
+
+<H2>Download already-constructed models</H2>
+
+<P>
+Some MTs representing terrains and free-form surfaces in 3D space
+are already available. You have just to 
+<A HREF="ftp://ftp.disi.unige.it/person/MagilloP/MT_SW/DATA/datasets.html">
+download them</A>. <FONT COLOR="AA0055">(external site)</FONT> </P>
+
+
+<H2>Make your own models</H2>
+
+Do you have either terrain data or surface meshes? 
+Try to use our programs to build the MT representation of your data and see 
+them through our demos.
+<UL>
+<LI>
+ For building an MT for a <B>terrain</B> given a set of
+ <B>scattered points</B>, you can use programs released within
+ <FONT COLOR="AA0055"><B>MT_DELAUNAY</B></FONT>.
+ <P>
+<LI>
+ You can also build an MT for a <B>terrain</B> represented by a 
+ <B>triangular mesh</B>, or by a <B>regular square grid</B>, again
+ by using <FONT COLOR="AA0055"><B>MT_DELAUNAY</B></FONT>.
+ <P>
+<LI>
+ For building an MT for a <B>3D object</B> represented by a 
+ <B>triangular mesh</B>, you can use a program developed 
+ by IMATI-CNR, Genova.
+</UL>
+
+<H2>Make your own builder</H2>
+
+You don't like the way our programs build the MT? You think you have a better 
+simplification program? Try to modify your program to make a new MT builder.
+<BR>
+Just follow instructions <A HREF="corebld.html"> here</A>.
+
+<H2>Modify extraction conditions in the demos</H2>
+
+Do you like to extract meshes with a different threshold function and/or 
+focus set? Try to define your own extraction conditions and modify our demos
+accordingly. Suppose you decide to modify demo <TT>demoX</TT>, where
+<TT>X</TT> = 1,2.
+<UL>
+<LI>
+ See <A HREF="extecnd.html">
+ here</A> how to define yor own extraction condition;
+ otherwise, you can try some of the 
+ <A HREF="exten.html#THRESHOLD">predefined conditions</A>
+ provided in the package.
+<LI>
+ Edit the file <TT>demoX.h</TT> to link your conditions to the demo;
+<LI>
+ Define variables <TT>focus</TT> (focus condition) and <TT>filter</TT> 
+ (resolution filter condition) of the appropriate class in
+ files <TT>demoX.h</TT> and <TT>demoX.c</TT>;
+<LI>
+ Decide how to initialize and modify your conditions within the demo;
+ you have to edit functions <TT>startGame</TT>, <TT>advanceGame</TT>,
+ and a few other functions declared in <TT>demoX.h</TT> (they are
+ implemented in <TT>demoX.c</TT>).
+<LI>
+ Decide how to visualize your focus set; you have to edit 
+ functions <TT>drawFocus</TT> in file <TT>demoXvis.c</TT>).
+</UL>
+
+<H2>Add your own attributes to the MT</H2>
+
+Do you need different or more attributes on your models? 
+Try to modify our programs to build and use an MT extended with attributes.
+<UL>
+<LI> See <A HREF="extedef.html">here</A> 
+     how to define an MT with attributes;
+<LI> See <A HREF="extebld.html">here</A> 
+     how to build it (you can modify your/our builder);
+<LI> See <A HREF="exteuse.html">here</A>
+     how to use it (you can modify our demos).
+</UL>
+
+<H2>Build your own application</H2>
+
+Now you are ready to design an application that handles meshes with the 
+attributes you need, and manages multiresolution the way you need. 
+In order to do this you have to:  
+<UL>
+<LI> <A HREF="extedef.html">Define an MT</A> with the attributes you need; 
+<LI> <A HREF="extebld.html">Build it</A>;
+<LI> <A HREF="extecnd.html">
+ Define extraction conditions </A> that can be applied on this MT;
+<LI> Design your own application program and GUI: you can either modify our 
+ demos, or design it from scratch, by any GUI and graphics API you like;
+<LI> In the context of your application,  
+ <A HREF="exteuse.html">use the MT</A>
+ to extract meshes at the level of detail you need.
+</UL>
+
+</BODY>
+
+</HTML>

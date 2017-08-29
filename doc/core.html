@@ -1,0 +1,889 @@
+<HTML>
+
+<TITLE>The MT Package - Kernel of the System</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (10) --><H2>KERNEL OF THE SYSTEM - CLASS HIERARCHY</H2>
+
+<IMG ALIGN=MIDDLE SRC="GIF/classes.gif" >
+
+
+<H2>Naming conventions</H2>
+
+In the kernel of the system names of macros, types and functions start with
+the prefix <TT>MT_</TT>.
+<BR>
+In the whole package, class names are of the form <TT>XXXClass</TT>, 
+and name <TT>XXX</TT> denotes the type of a pointer to the class.
+<BR>
+Macro <TT>MT_INDEX</TT> denotes the type used for indexing vertices and
+tiles, nodes and arcs in an MT.
+
+<!-- (10.1) --><H2>Basic Classes: the MT and attributes</H2>
+
+<A NAME="PERSISTENT"></A>
+
+<H3> <TT>MT_PersistentClass</TT> </H3>
+
+Abstract class.
+
+<H4>Meaning</H4>
+
+A class of objects that can read / write themselves according to
+the standard file format of the MT package.
+<P>
+
+An object of this class has a keyword (that will depend on the specific
+subclass) and an object description used when writing the object on a file.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>char * MT_ClassKeyword(void)</TT>: return the keyword of this
+     class.
+<LI> <TT>void MT_SetDescription(char * s)</TT>: set the string describing 
+     this object, string <TT>s</TT> must be at most <TT>MT_DESCR_LEN</TT>
+     characters long.
+<LI> <TT>vchar * MT_TheDescription(void)</TT>: return the string describing
+     this object.
+<LI> <TT>void MT_TheDescription(char * s)</TT>: return a copy of the 
+     description string, string <TT>s</TT> must be long enough.
+<LI> <TT>int MT_Read(FILE * fd)</TT>: read this object from given file,
+     return <TT>1</TT> on success, <TT>0</TT> on failure.
+<LI> <TT>void MT_Write(FILE * fd, int file_encoding = MT_ASCII_ENCODING)</TT>: 
+     write this object on given file, <TT>file_encoding</TT>
+     determines the file format: <TT>MT_ASCII_ENCODING</TT> (default) or 
+     <TT>MT_BINARY_ENCODING</TT>.
+</UL>
+
+<A NAME="TILESET"></A>
+
+<H3> <TT>MT_TileSetClass</TT> </H3>
+
+Subclass of <TT><A HREF="#PERSISTENT">MT_PersistentClass</A></TT>.
+
+<H4>Meaning</H4>
+
+A class of objects made up of vertices and tiles.
+Tiles are <TT>k</TT>-dimensional, and vertices are embedded in
+<TT>d</TT>-dimensional space, for generic <TT>k</TT> and <TT>d</TT>.
+The implementation sets an upper bound of <TT>10</TT> 
+for <TT>k</TT> and <TT>d</TT>.
+
+<H4>Constructor</H4>
+
+Parameters: the dimension of the embedding space
+(= number of coordinates for each vertex), and the dimension of the tiles
+(= number of vertices for each tile, minus one).
+The resulting tile set has no vertices and no tiles.
+A tile set must read its contents from a file.
+
+<H4>Functions</H4>
+
+This class provides functions to access the geometry of vertices and tiles.
+Vertices are described as tuples of coordinates, and tiles as tuples of
+vertices.
+Elements inside a tuple are indexed starting from zero.
+Both vertices and tiles are referenced as <TT>MT_INDEX</TT>es.
+Valid <TT>MT_INDEX</TT>es start from <TT>1</TT>, the value <TT>0</TT> 
+(macro <TT>MT_NULL_INDEX</TT>) is used for denoting "no vertex" or "no tile".
+
+<UL>
+<LI> <B>Global information: </B><BR>
+
+<UL>
+<LI> <TT> int MT_VertexDim(void)</TT>: return the dimension of the 
+     embedding space.
+<LI> <TT> int MT_TileDim(void)</TT>: return the dimension of the tiles.
+<LI> <TT> int MT_NumTileVertices(void)</TT>: return the number of vertices
+     for each tile.
+<LI> <TT> MT_INDEX MT_VertexNum(void)</TT>: return the number of vertices
+     in this object.
+<LI> <TT> MT_INDEX MT_TileNum(void)</TT>: return the number of tiles in 
+     this object.
+
+<LI> <TT> void MT_BoundingBox(float * min_values, float * max_values)</TT>:
+     fill the two given arrays with the minima and the maxima, respectively,
+     of vertex coordinates; the two
+     arrays must have at least <TT>MT_VertexDim()</TT> positions each.
+<LI> <TT> void MT_CoordRange(int i, float * min_v, float * max_v)</TT>:
+     return the minimum and maximum of the <TT>i</TT>-th coordinate among
+     all vertices, <TT>i</TT> must be between <TT>0</TT> and 
+     <TT>MT_VertexDim()-1</TT>.
+<LI> <TT> float MT_MinCoord(int i), float MT_MaxCoord(int i)</TT>:
+     return the minimum and the maximum value of the <TT>i</TT>-th
+      coordinate among all vertices, <TT>i</TT>
+     must be between <TT>0</TT> and <TT>MT_VertexDim()-1</TT>.
+<LI> <TT> float MT_MinX(void), float MT_MinY(void), 
+     float MT_MinZ(void)</TT>:
+     return the minimum of the first, second, and third coordinate,
+     make sure that to call <TT>MT_MinZ</TT> only if 
+     <TT>MT_VertexDim()>=3</TT>.
+<LI> <TT> float MT_MaxX(void), float MT_MaxY(void), float MT_MaxZ(void)</TT>:
+     return the maximum value of the first, second, and third coordinate,
+     make sure that to call <TT>MT_MaxZ</TT> only if 
+     <TT>MT_VertexDim()>=3</TT>.
+</UL>
+
+<LI> <B>Information for vertices: </B><BR>
+
+<UL>
+<LI> <TT> void MT_VertexCoords(MT_INDEX v, float ** f),
+     float * MT_VertexCoords(MT_INDEX v)</TT>:
+     return a pointer to the array of coordinates of vertex <TT>v</TT>.
+<LI> <TT> void MT_CopyVertexCoords(MT_INDEX v, float * f)</TT>: copy the 
+     coordinates of vertex <TT>v</TT> into array <TT>f</TT>,
+     <TT>f</TT> must have at least <TT>MT_vertexDim()</TT> positions.
+<LI> <TT> float MT_VertexCoord(MT_INDEX v, int i)</TT>:
+     return the <TT>i</TT>-th coordinate of <TT>v</TT>, <TT>i</TT> must be between
+     <TT>0</TT> and <TT>MT_TileVertexDim()-1</TT>.
+<LI> <TT> float MT_VertexX(MT_INDEX v), float MT_VertexY(MT_INDEX v),
+     float MT_VertexZ(MT_INDEX v)</TT>: return the first, second, and third
+     coordinate of vertex <TT>v</TT>, make sure that to call 
+     <TT>MT_VertexZ</TT> only if <TT>MT_VertexDim()>=3</TT>.
+</UL>
+
+<LI> <B>Information for tiles: </B><BR>
+
+<UL>
+<LI> <TT> void MT_TileVertices(MT_INDEX t, MT_INDEX ** v),
+     MT_INDEX * MT_TileVertices(MT_INDEX t)</TT>:
+     return a pointer to the array of vertices of tile <TT>t</TT>.
+<LI> <TT> void MT_CopyTileVertices(MT_INDEX t, MT_INDEX * v)</TT>:
+     copy the vertices of tile t into array <TT>v</TT>, <TT>v</TT> must
+     have at least <TT>MT_NumTileVertices()</TT> positions.
+<LI> <TT> int MT_TileVertexPosition(MT_INDEX t, MT_INDEX v)</TT>:
+     if <TT>v</TT> is a vertex of <TT>t</TT>,
+     return the index of <TT>v</TT> in tile 
+     <TT>t</TT>, otherwise, return <TT>-1</TT>.
+<LI> <TT> int MT_OppositeVertexPosition(MT_INDEX t, 
+     MT_INDEX t1, int i1)</TT>:
+     if tile <TT>t1</TT> is adjacent to <TT>t</TT> along the face opposite
+     to its <TT>i1</TT>-th vertex, then return the index in tile <TT>t</TT>
+     of the vertex of <TT>t</TT> which is not in <TT>t1</TT>; 
+     otherwise, return <TT>-1</TT>.
+</UL>
+
+</UL>
+
+<A NAME="MULTITESS"></A>
+
+<H3> <TT>MT_MultiTesselationClass</TT> </H3>
+
+Subclass of <TT><A HREF="#TILESET">MT_TileSetClass</A></TT>.
+
+<H4>Meaning</H4>
+
+A Multi-Tesselation. It adds a DAG to a tile set.
+
+<H4>Constructor</H4>
+
+Parameters: the dimension of the embedding space, and the dimension of the
+tiles (the same as for class <TT>MT_TileSetClass</TT>).
+The resulting MT is empty. An MT must read its contents from a file.
+
+<H4>Functions</H4>
+
+Functions to navigate the DAG are used within the extractors, and are
+of no interest for the user.
+Only the following functions may be of interest:
+
+<UL>
+<LI> <TT> MT_INDEX MT_ArcNum(void)</TT>: return the number of arcs in this MT.
+<LI> <TT> MT_INDEX MT_NodeNum(void)</TT>: return the number of nodes in this MT.
+</UL>
+
+<A NAME="ATTRTABLE"></A>
+
+<H3> <TT>MT_AttrTableClass</TT> </H3>
+
+Abstract class, 
+subclass of <TT><A HREF="#PERSISTENT">MT_PersistentClass</A></TT>.
+
+<H4>Meaning</H4> 
+
+A table that stores a value (of some type that is not specified at this
+level) associated with each entity (vertex, tile) of an MT.
+<P>
+
+Subclasses of the generic attribute table will be defined for storing
+values of a specific type (e.g., float, int, etc.).
+Such subclasses will enrich the interface with
+access functions for getting and setting the attribute values.
+<P>
+
+<!--
+An MT with attributes will be a subclass of an MT containing:
+<UL>
+<LI> in the internal implementation, a pointer to the subclass of attribute
+     table storing values of the correct type (e.g., float for tile errors)
+<LI> in its interface, functions to access the value for a vertex/tile 
+     (implemented by referring to the attribute table storing such values).
+</UL>
+-->
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT> MT_INDEX MT_AttrNum(void)</TT>: return the number of attributes
+     stored in this table.
+<LI> <TT> int MT_ReadAttr (FILE * fd, MT_INDEX i, int file_encoding)</TT>:
+     read the attribute for the <TT>i</TT>-th entity.
+<LI> <TT> void MT_WriteAttr(FILE * fd, MT_INDEX i, int file_encoding)</TT>:
+     write the attribute for the <TT>i</TT>-th entity.
+<LI> Functions to set and get the attribute of an entity
+     will be added in the subclasses.
+</UL>
+
+<!-- (10.2) --><H2>Classes for extracting tesselations</H2>
+
+<A NAME="COND"></A>
+
+<H3> <TT>MT_CondClass</TT> </H3>
+
+<H4>Meaning</H4>
+
+A boolean function on the tiles of an MT. 
+Conditions are used within an extractor for driving the extraction of
+tesselations from an MT. 
+It is an <B>abstract class</B>.
+<P>
+
+The condition can be interpreted as:
+<UL>
+<LI> a resolution condition (deciding when a tile is refined enough,
+     called a <B>feasible tile</B>)
+<LI> a focus condition (deciding when a tile is of interest,
+     called an <B>active tile</B>).
+</UL>
+
+Subclasses of <TT>MT_CondClass</TT> implement specific resolution conditions
+and focus conditions.
+<P>
+
+There are two modes for evaluating the condition:
+<OL>
+<LI> <B>loose</B> evaluation:
+   used inside extraction algorithms
+<LI> <B>strict</B> evaluation:
+   used on the tiles of the extracted tesselation
+</OL>
+
+The loose evaluation assumes that the condition is applied to tiles that
+are not at full resolution; thus, their spatial location can be slightly
+different from the location of the object portion that they approximate.
+
+The strict evaluation assumes that the condition is applied to tiles that
+are - if not at full resolution - at a resolution considered as sufficient
+by the application; thus, their distance from the represented object 
+portion is negligible.
+<P>
+
+For instance, a condition selecting the tiles which contain a given
+point, evaluated on an MT where each tile has an associated approximation
+error measuring its distance from the object portion it represents:
+<UL>
+<LI> loose evaluation tests whether a tile "may contain" the point, taking
+     also the error into account
+<LI> strict evaluation is the standard point-in-tile test
+</UL>
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT> int MT_EvalCond(MT_MultiTesselation m, MT_INDEX t, int flag)</TT>:
+     evaluate the condition on a tile,
+     return <TT>1</TT> if tile <TT>t</TT> satisfies the condition, 
+     <TT>0</TT> otherwise.
+     <TT>flag</TT> is either <TT>MT_LOOSE</TT> or <TT>MT_STRICT</TT>,
+     and determines the evaluation mode.
+<LI> <TT> int MT_IsGood(MT_MultiTesselation m)</TT>: 
+     return <TT>1</TT> if this condition can be applied to MT <TT>m</TT>,
+     <TT>0</TT> otherwise
+     (some conditions may require MTs with tiles of a certain
+     dimension, or embedded in a space of a certain dimension).
+</UL>
+
+<A NAME="EXTRACTOR"></A>
+
+<H3> <TT>MT_ExtractorClass</TT> </H3>
+
+Abstract class.
+
+<H4>Meaning</H4>
+
+A class of objects which extract tesselations from an MT given
+a resolution filter condition and a focus condition.
+<P>
+
+<TT>MT_ExtractorClass</TT> has three subclasses which implement 
+extraction through specific algorithms:
+<UL>
+<LI> <TT><B>MT_StaticExtractorClass: </B></TT> use the global static 
+     extraction algorithm 
+<LI> <TT><B>MT_DynamicExtractorClass: </B></TT> use the global dynamic
+     extraction algorithm 
+<LI> <TT><B>MT_LocalExtractorClass: </B></TT>
+     use the local (static) extraction algorithm
+</UL>
+
+An extractor may output the extracted tesselation simply as a list of
+tiles, or may also generate information about mutually adjacent tiles.
+Reconstruction of adjacency links between extracted tiles is a feature
+that must be set when creating the extractor. By default, it
+is disabled.
+<P>
+
+An extractor may also generate statistics about the performance of the
+extraction algorithm. Such feature may be enabled and disabled at run
+time.
+
+<H4>Constructor</H4>
+
+Parameters: the MT from which tesselations will be extracted, and a boolean
+flag specifying if the extractor must generate adjacency information for the
+extracted tesselation (default = disabled).
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <B>Extracting a tesselation: </B><BR>
+
+<UL>
+<LI> <TT> MT_MultiTesselation MT_TheMT(void)</TT>: return the working MT.
+<LI> <TT> int MT_SetFilter(MT_Cond flt)</TT>: set the resolution filter
+     condition; if <TT>flt</TT> is <TT>NULL</TT>, then no condition is set
+     (all tiles are feasible);
+     return <TT>1</TT> if successful, <TT>0</TT> otherwise.
+<LI> <TT> int MT_SetFocus(MT_Cond fcs)</TT>: set the focus condition;
+     if <TT>fcs</TT> is <TT>NULL</TT>, then no condition is set
+     (all tiles are active);
+     return <TT>1</TT> if successful, <TT>0</TT> otherwise.
+<LI> <TT> MT_Cond MT_TheFilter(void)</TT>: return the current resolution filter
+     condition.
+<LI> <TT> MT_Cond MT_TheFocus(void)</TT>: return the current focus condition.
+<LI> <TT> int MT_ExtractTesselation(void)</TT>: extract a tesselation based on the
+     current resolution filter and focus condition, the algorithm used
+     depends on the specific class of extractor;
+     return the number of extracted tiles.
+</UL>
+
+<LI> <B>Access to the extracted tesselation: </B><BR>
+
+<UL>
+<LI> <TT> int MT_ExtractedTiles(MT_INDEX ** t_arr)</TT>: 
+     return a pointer to an internal array of the extractor
+     containing the extracted active tiles; return the array size.
+<LI> <TT> MT_INDEX MT_ExtractedTilesNum(void)</TT>: 
+     return the number of active tiles in the last extracted tesselation.
+<LI> <TT> MT_INDEX MT_AllExtractedTiles(MT_INDEX ** t_arr)</TT>: return 
+     a pointer to an internal array of the extractor
+     containing all the extracted tiles (active tiles first, 
+     followed by non-active ones); return the array size.
+<LI> <TT> MT_INDEX MT_AllExtractedTilesNum(void)</TT>: return the total            
+     number of tiles in the last extracted tesselation.
+<LI> <TT> MT_INDEX MT_AllExtractedTiles(MT_INDEX ** t_arr1, MT_INDEX * size1,
+     MT_INDEX ** t_arr2, MT_INDEX * size2)</TT>:
+     return pointers to two internal arrays of the extractor containing 
+     the extracted active and non-active tiles, respectively, and the sizes
+     of such arrays; return the total size of the two arrays.
+<LI> <TT> MT_INDEX MT_TileAdj(MT_INDEX t, int i)</TT>: if reconstruction of
+     adjacency links in the extracted tesselation is enabled, return the
+     tile adjacent to <TT>t</TT> along the face oppostite to the
+     <TT>i</TT>-th vertex of <TT>t</TT>.
+<LI> <TT> MT_INDEX * MT_TileAdjs(MT_INDEX t)</TT>: if reconstruction of
+     adjacency links in the extracted tesselation is enabled, return a 
+     pointer to the array of tiles adjacent to <TT>t</TT> (the i-th tile 
+     is the one adjacent along the face oppostite to the
+     <TT>i</TT>-th vertex of <TT>t</TT>).
+<LI> <TT> void MT_CopyTileAdjs(MT_INDEX tMT_INDEX * ta)</TT>: as above, 
+     but make a copy of the array into array ta.
+<LI> <TT> int MT_AdjGenerationEnabled(void)</TT>: return <TT>1</TT> if
+     reconstruction of adjacency links in the extracted tesselation is
+     enabled, <TT>0</TT> otherwise.
+</UL>
+
+<LI> <B>Extraction statistics: </B><BR>
+
+<UL>
+<LI> <TT> void MT_EnableStat(void), void MT_DisableStat(void)</TT>: 
+     enable / disable generation of statistic information
+     about the extraction algorithm.
+<LI> <TT> int MT_StatEnabled(void)</TT>: return <TT>1</TT>
+     if statistics are enabled, <TT>0</TT> otherwise.
+<LI> <TT> MT_INDEX MT_VisitedNodes(void)</TT>: return the
+     number of nodes added to or removed from the consistent
+     set of updates during the last extraction query.
+<LI> <TT> MT_INDEX MT_UsedNodes(void)</TT>: return the 
+     number of nodes in the consistent set of updates resulting from 
+     the last extraction query.
+<LI> <TT> MT_INDEX MT_TestedNodes(void)</TT>: return the 
+     number of nodes tested as candidate for being removed
+     from the consistent set (only for dynamic extractor).
+<!--
+<LI> <TT> MT_INDEX MT_VisitedArcs(void)</TT>: return the 
+     number of arcs visited by the extraction algorithm. 
+<LI> <TT> MT_INDEX MT_UsedArcs(void)</TT>: return the 
+     number of arcs in the current front.
+<LI> <TT> MT_INDEX MT_TestedArcs(void)</TT>: return the 
+     number of arcs visited by the extraction algorithm 
+     and swept across the front.
+-->
+<LI> <TT> MT_INDEX MT_VisitedTiles(void)</TT>: return the 
+     number of tiles in the portion of DAG visited by the extraction
+     algorithm.
+<LI> <TT> MT_INDEX MT_TestedTiles(void)</TT>: return the 
+     number of tiles tested against the extraction conditions.
+</UL>
+
+
+</UL>
+
+<!-- (10.3) --><H2>Classes for building an MT</H2>
+
+<A NAME="BUILDBASE"></A>
+
+<H3> <TT>MT_BuildingBaseClass</TT> </H3>
+
+<H4>Meaning</H4>
+
+Base class containing information which must be inherited by the MT
+building interface and by the user-defined building interfaces of 
+MT feaures.
+
+<H4>Functions</H4>
+
+The following functions connect an attribute building interface
+for vertex or tile attributes to this object.
+
+<UL>
+<LI> <TT> void ConnectVertexAttrBuilder(MT_AttrBuildingInterface abi)</TT>:
+     connect <TT>abi</TT> as a vertex attribute building interface.
+<LI> <TT> void ConnectTileAttrBuilder(MT_AttrBuildingInterface abi)</TT>:
+     connect <TT>abi</TT> as a tile attribute building interface.
+</UL>
+
+<A NAME="BUILDINTERF"></A>
+
+<H3> <TT>MT_BuildingInterfaceClass</TT> </H3>
+
+Subclass of <TT><A HREF="#PERSISTENT">MT_PersistentClass</A></TT>
+and of <TT><A HREF="#BUILDBASE">MT_BuildingBaseClass</A></TT>.
+
+<H4>Meaning</H4>
+
+This class provides functions for recording the sequence updates performed on
+a tesselation during a process of refinement or coarsening, and for building
+an MT from such a sequence.
+An update consists of deleting a set of tiles and creating another
+set of tiles. The sequence of all updates is called a <B>history</B>.
+<P>
+
+<!--
+The Building Interface can be in one of the following states:
+<OL>
+<LI> INITIAL: it is possible to
+  <UL>
+  <LI> start recording a history, i.e., a sequence of updates of a tesselation,
+       in this case the next state is TRACING
+  <LI> read a history previously saved on a file and build an MT,
+       in this case the next state is FINAL
+  </UL>
+<LI> TRACING: we are recording a history. It is possible to
+  <UL>
+  <LI> record the creation/deletion of a tile within the current
+       update, record the end of the current update
+  <LI> end the history, in this case the next state is TRACED
+  </UL>
+<LI> TRACED: we have finished recording a history. It is possible to
+  <UL>
+  <LI> convert such history into an MT, the next state is FINAL
+  <LI> write the history just recorded on a file, the next state is INITIAL
+  </UL>
+<LI> FINAL: we have already built an MT
+</OL>
+
+<IMG ALIGN=MIDDLE SRC="GIF/transiz.gif" >  
+
+-->
+
+<H4>Recording a history</H4>
+
+The history is not kept in memory, but it is written on disk in some
+temporary files.  This allows saving memory since it is supposed that the
+primary process of refinement or simplification (that generates the updates)
+needs quite a lot of memory. <P>
+
+<!--
+At the end of the recording process, one can either save the history in a file
+to be used later, or convert it directly into an MT.
+If the second option is chosen, it may be necessary to free all the auxiliary
+data structures of the primary process of refinement/simplification in
+order to gain sufficient memory.
+-->
+
+At the end of the recording process, one can convert the history into an MT.
+Before that, it may be necessary to free all the auxiliary
+data structures of the primary process of refinement/simplification in
+order to gain sufficient memory.
+
+<H4>Converting a history</H4>
+
+<!--
+We can build an MT either from a history just generated, or a history 
+previously saved on disk in a file.
+-->
+First, the user must provide an <TT>MT_Multitesselation</TT> that 
+will contain the result of MT construction. 
+After the MT has been built, the building interface may be
+deleted and the constructed MT is ready to be used, or to be written on
+a file and used later by other programs.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <B>History recording: </B><BR>
+
+The user program must provide a field of type <TT>MT_INDEX</TT>
+associated with each
+vertex and each tile used in the process of refinement or simplification.
+Such field must be initialized before starting the process by setting it
+to <TT>MT_NULL_INDEX</TT>.
+Then, it must be only managed through the history recording functions below.
+
+<UL>
+<LI> <TT> int MT_StartHistory(int d, int k, int history_type)</TT>:
+     start a history for a <TT>k</TT>-dimensional MT embedded in 
+     <TT>d</TT> dimensions, <TT>history_type</TT>
+     is either <TT>MT_REFINING</TT> or <TT>MT_COARSENING</TT>;
+     return <TT>1</TT> on success, <TT>0</TT> on failure.
+<LI> <TT> MT_INDEX MT_UseVertex(MT_INDEX i, float * coord_array)</TT>:
+     record a vertex to be used in the next tile that will be made,
+     <TT>coord_array</TT> contains the vertex coordinates, 
+     <TT>i</TT> is the <TT>MT_INDEX</TT> field
+     of the vertex; return a new value to be assigned to the
+     <TT>MT_INDEX</TT> field of the vertex.
+<LI> <TT> MT_INDEX MT_MakeTile(void)</TT>: record the creation of a new 
+     tile (formed by the vertices on which <TT>MT_UseVertex</TT> has just
+     been called); return a value to be assigned to the <TT>MT_INDEX</TT>
+     field of the tile.
+<LI> <TT> int MT_KillTile(MT_INDEX i)</TT>: record the deletion of a tile.
+     Called by passing the <TT>MT_INDEX</TT> field of the tile;
+     return <TT>1</TT> on success, <TT>0</TT> on failure.
+<LI> <TT> int MT_EndUpdate(void)</TT>: record the fact that the update is completed;
+     called just after the creation of the initial tesselation, and after
+     each update; return <TT>1</TT>  on success, <TT>0</TT> on failure.
+<LI> <TT> int MT_EndHistory(void)</TT>: end the history; return <TT>1</TT>
+     on success, <TT>0</TT> on failure.
+</UL>
+
+<LI> <B>History conversion: </B><BR>
+
+<UL>
+<LI> <TT> void MT_SetTarget(MT_MultiTesselation m)</TT>: set the MT to be built; it
+     must be called before <TT>MT_Convert</TT>.
+<!-- or MT_Read. -->
+<LI> <TT> int MT_Convert(void)</TT>: build the target MT from the history
+     recorded just now. First an MT must be set with <TT>MT_Target</TT>;
+     return <TT>1</TT> on success, <TT>0</TT> on failure.
+</UL>
+
+<!--
+<LI> <B>Read/write: </B><BR>
+The inherited function MT_Write writes the history after having recorded it.
+The inherited function MT_Read reads a history previously saved and builds
+an MT.
+-->
+
+</UL>
+
+<A NAME="BUILDATTR"></A>
+
+<H3> <TT>MT_AttrBuildingInterfaceClass</TT> </H3>
+
+Abstract class, 
+subclass of <TT><A HREF="#PERSISTENT">MT_PersistentClass</A></TT>.
+
+<H4>Meaning</H4>
+
+An interface containing functions that must be added to the MT
+building interface in order to record values (of some type that is not
+specified at this level) associated with its vertices/tiles.
+<P>
+
+It provides functions for recording the attributes of tiles or vertices during
+the evolution of a tesselation after a sequence of local modifications, and
+for building attribute tables from such information.
+<P>
+
+Subclasses of <TT>MT_AttrBuildingInterfaceClass</TT> will 
+record attributes of specific types.
+<P>
+
+<!--
+A building interface for an MT with attributes will be a subclass of an 
+MT building interface containing:
+<UL>
+<LI> in the internal implementation, a pointer to the subclass of attribute
+     building interface managing the values of the correct type 
+<LI> in its interface, functions to record the values during the evolution
+     of the tesselation and to convert such information into an attribute
+     table (implemented by referring to the attribute building interface)
+</UL>
+-->
+
+<!--
+The Attribute Building Interface can be in one of the following states:
+<OL>
+<LI> INITIAL: it is possible to
+  <UL>
+  <LI> start recording attributes, in this case the next state is TRACING
+  <LI> read already recorded attributes from a file and build an 
+       attribute table, in this case the next state is FINAL
+  </UL>
+<LI> TRACING: we are recording attributes. It is possible to
+  <UL>
+  <LI> record an attribute for a tile/vertex
+  <LI> stop recording, in this case the next state is TRACED
+  </UL>
+<LI> TRACED: we have finished recording the attributes. It is possible to
+  <UL>
+  <LI> convert such history into an attribute table, 
+       in this case the next state is FINAL
+  <LI> write the recorded attributes on a file, the next state is INITIAL
+</UL>                                                   
+<LI> FINAL: we have already built an attribute table
+</OL>
+-->
+
+An object of class <TT>MT_AttrBuildingInterfaceClass</TT> will not be used
+alone. It will be used within a subclass of
+<TT>MT_BuildingInterfaceClass</TT> in order to record attributes for the MT
+that we want to build.
+
+<H4>Recording attributes inside a history</H4>
+
+The attribute building interface contains among its internal fields an 
+auxiliary attribute table, which is used for reading/writing attribute 
+values, thus abstracting from the specific type of attributes.
+Attributes are saved on temporary files in order to
+reduce memory requirements.
+<P>
+
+In subclasses, the auxiliary attribute table will point to an attribute
+table, of a subclass of <TT>MT_AttrTableClass</TT>, corresponding to the
+specific type of attribute.
+<P>
+
+Subclasses of <TT>MT_AttrBuildingInterfaceClass</TT> will provide functions
+of the form <TT>MT_MakeAttr</TT> (with parameters that depend on the type 
+of attribute) for recording the attribute of an MT entity.
+<P>
+
+The attribute for a vertex/tile does not need to be recorded at the same
+moment when such vertex/tile is recorded in the MT history (through a 
+call to <TT>MT_UseVertex</TT> and <TT>MT_MakeTile</TT>, respectively). 
+It can be recorded at any time afterwards (as soon as the applicative
+program knows it: for instance, in surface refinement vertex normal may be
+known only at the end of the refinement), and it can be recorded more than
+once for the same entity.
+When converting the recorded attributes, just
+one attribute will be kept for each entity (the last recorded one).
+<P>
+
+<!--
+At the end of attribute recording, we can either build an attribute table
+directly, or save the recorded attributes on a file to be used later.
+-->
+
+<H4>Building an attribute table</H4>
+
+<!--
+We can build an attribute table either from attributes just recorded,
+or from attributes previously saved on a file.
+-->
+At the end of attribute recording, we can build an attribute table
+from the recorded attributes.
+Before this, the user must provide the attribute table to be built.
+After having built the attribute table, the attribute building interface
+can be deleted.
+
+<H4>Public functions</H4>
+
+<UL>
+<LI> <B>Attribute recording:</B><BR>
+
+<UL>
+<LI> <TT> int MT_StartAttrHistory(void)</TT>: start recording attributes.
+<LI> <TT> int MT_EndAttrHistory(void)</TT>: stop recording attributes.
+<LI> A function of the fom <TT>MT_MakeAttr</TT>
+     will be added in the subclasses to
+     record the value of the attribute for an MT entity.
+</UL>
+
+<LI> <B>Attribute table construction:</B>
+
+<UL>
+<LI> <TT> void MT_SetTargetAttrTable(MT_AttrTable at)</TT>: set the attribute 
+     table to be built; it must be called before <TT>MT_AttrConvert</TT>.
+<!--  or MT_Read. -->
+<LI> <TT> int MT_AttrConvert(void)</TT>: 
+     build the target attribute table from the attributes recorded just now.
+</UL>
+
+<!--
+<LI> <B>Read/write: </B><BR>
+The inherited function MT_Write writes the attribute 
+history after having recorded it.
+The inherited function MT_Read reads an attribute 
+history previously saved and builds an attribute table.
+-->
+
+</UL>
+
+<!-- (10.4) --><H2>Classes for Predefined Attributes</H2>
+
+The system provides predefined classes for implementing attributes
+consisting of values of type <TT>int</TT>, <TT>char</TT>, <TT>float</TT>, 
+for vectors of one of these types, and for <TT>XXX</TT> = one bit.
+<P>
+
+In the following, the symbol <TT>XXX</TT> denotes a type among the ones
+mentioned above.
+In order to implement attributes of type <TT>XXX</TT>
+for an MT, we provide:
+
+<OL>
+<LI>
+  a subclass
+  of <TT>MT_AttrTableClass</TT>, storing values of type <TT>XXX</TT>.
+<LI>
+  a subclass of <TT>MT_AttrBuildingInterfaceClass</TT>, for recording values 
+  of type <TT>XXX</TT> and building the <TT>XXX</TT> attribute table.
+</OL>
+
+Here, we explain the contents of such classes while remaining generic about
+the basic type <TT>XXX</TT>.
+
+<A NAME="XXXATTR"></A>
+
+<H3> <TT>MT_XXXTableClass</TT> </H3>
+
+Subclass of <TT><A HREF="#ATTRTABLE">MT_AttrTableClass</A></TT>. 
+
+<H4>Meaning</H4>
+
+An attribute table storing values of type <TT>XXX</TT>. Here, we assume that
+<TT>XXX</TT> is a basic type. 
+It adds functions to access the attribute values.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters. The resulting attribute table is
+empty. An <TT>XXX</TT> attribute table must read its contents from a file.
+
+<H4>Functions</H4>
+
+<UL>
+<!--
+<LI> <TT> void MT_SetAttrValue(MT_INDEX i, XXX v)</TT>: set the attribute
+     value for MT entity (vertex or tile) <TT>i</TT>.
+-->
+<LI> <TT> XXX MT_AttrValue(MT_INDEX i)</TT>: return the attribute value 
+     stored for MT entity (vertex or tile) <TT>i</TT>.
+</UL>
+
+<A NAME="XXXVECTORATTR"></A>
+
+<H3> <TT>MT_XXXVectorTableClass</TT> </H3>
+
+Subclass of <TT><A HREF="#ATTRTABLE">MT_AttrTableClass</A></TT>. 
+
+<H4>Meaning</H4>
+
+An attribute table storing values consisting of vectors of elements of
+the basic type <TT>XXX</TT>. 
+It adds functions to access the attribute values.
+
+<H4>Constructor</H4>
+
+Parameter: the length of the vector.
+The resulting attribute table is empty. 
+An <TT>XXXVector</TT> attribute table must read its contents from a file.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT> XXX * MT_TheVector(MT_INDEX i)</TT>: return a pointer to the array
+     associated with MT entity (vertex or tile) <TT>i</TT>.
+<LI> <TT> XXX MT_TheVectorEntry(MT_INDEX i, int j)</TT>: return the 
+     <TT>j</TT>-th entry of
+     the array associated with MT entity (vertex or tile) <TT>i</TT>.
+</UL>
+
+<A NAME="XXXBUILD"></A>
+
+<H3> <TT>MT_XXXBuildingInterfaceClass</TT> </H3>
+
+Subclass of <TT><A HREF="#BUILDATTR">MT_AttrBuildingInterfaceClass</A></TT>.
+
+<H4>Meaning</H4>
+
+An attribute building interface for values of type <TT>XXX</TT>.
+Simply an attribute building interface where the internal MT attribute
+table points to an object of the class <TT>MT_XXXTableClass</TT>.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT> int MT_MakeAttrValue(MT_INDEX i, XXX v)</TT>: record the value 
+     of the attribute for MT entity (vertex or tile) <TT>i</TT>.
+<LI> <TT> void MT_SetTargetAttrTable(MT_XXXTable at)</TT>: set the
+     attribute table to be built.
+<LI> <TT> MT_XXXTable MT_TheAttrTable(void)</TT>: return the
+     attribute built table.
+</UL>
+
+<A NAME="XXXVECTORBUILD"></A>
+
+<H3> <TT>MT_XXXVectorBuildingInterfaceClass</TT> </H3>
+
+Subclass of <TT><A HREF="#BUILDATTR">MT_AttrBuildingInterfaceClass</A></TT>.
+
+<H4>Meaning</H4>
+
+An attribute building interface for values consisting of
+vectors of the basic type <TT>XXX</TT>.
+Simply an attribute building interface where the internal MT attribute
+table points to an object of the class <TT>MT_XXXVectorTableClass</TT>.
+
+<H4>Constructor</H4>
+
+Parameter: the length of the vector.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT> int MT_MakeAttrVector(MT_INDEX i, XXX *v)</TT>: record array 
+     <TT>v</TT> as
+     the attribute for MT entity (vertex or tile) <TT>i</TT>.
+<LI> <TT> void MT_SetTargetAttrTable(MT_XXXVectorTable at)</TT>: set the
+     attribute table to be built.
+<LI> <TT> MT_XXXVectorTable MT_TheAttrTable(void)</TT>: return the
+     attribute built table.
+</UL>
+
+</BODY>
+
+</HTML>

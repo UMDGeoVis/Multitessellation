@@ -1,0 +1,222 @@
+<HTML>
+
+<TITLE>The MT Package - How to use a generic MT</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (5) --><H2>HOW TO USE A GENERIC MT</H2>
+
+An MT is used for extracting tesselations at variable resolution from it.
+Such tesselations will then be processed in some way 
+within the application program.
+<P>
+
+For extracting a tesselations at variable resolution from an MT, we need:
+<OL>
+<LI> An <A HREF="core.html#EXTRACTOR">extractor</A>, 
+     chosen among the available ones:
+     static extractor, dynamic extractor, local extractor
+     (class <TT>MT_StaticExtractorClass, MT_DynamictractorClass,
+     MT_LocaltractorClass</TT>, respectively).
+<LI> A resolution filter condition and/or a focus condition
+     (subclasses of <TT><A HREF="core.html#COND">MT_CondClass</A></TT>).
+</OL>
+
+The first two types of extractors generate a tesselation covering the
+whole object, where active tiles satisfy the resolution filter.
+The local extractor generates a tesselation restricted
+to active tiles, such that all such tiles satisfy the resolution filter.
+<P>
+
+<!-- (5.1) --><H3>How to choose the extractor</H3>
+
+<H4>Static vs. dynamic extractor</H4>
+
+The <B>static extractor</B> needs less memory than the dynamic one.
+It is good for applications which perform few extraction queries, or
+with query parameters that vary considerably between two consecutive
+queries.
+<P>
+
+The <B>dynamic extractor</B> is more efficient for applications 
+in which the query parameters vary gradually between two consecutive
+queries.
+In this case, it is faster to modify the solution of the previous query
+into the solution of the next query, than recomputing it by scratch.
+
+<H4>Local vs. dynamic extractor</H4>
+
+The <B>local extractor</B> is recommended for applications in which the
+focus set is very selective, i.e., active tiles cover a small portion
+of the spatial object described by the MT.
+<P>
+
+In application that are interested in processing just active
+tiles, the dynamic extractor has the disadvantage of generating 
+a tesselation covering the whole object.
+On the other hand, the local extractor works with a static approach. 
+Thus, in applications in which the focus set is not very selective, and
+query parameters change gradually from query to query, 
+the <B>dynamic extractor</B> may still be faster than the local one.
+
+<!-- (5.2) --><H3>Guidelines</H3>
+
+In order to extract a tesselation from an MT, an application program
+must perform the following operations:
+
+<OL>
+<LI> Create and MT and initialize it (typically, by reading it from a file).
+<LI> Create an extractor, of the suitable class, for that MT.
+     When creating the extractor, it is possible to enable the
+     <B>generation of tile-to-tile adjacency links</B>
+     in extracted tesselations,
+     if this feature is useful within the application program.
+     By default, adjacency generation is disabled since it is a
+     time-consuming operation.
+<LI> Create a suitable resolution filter condition
+     and associate it with the extractor by calling function
+     <TT>MT_SetFilter</TT>.
+<LI> Create a suitable focus condition
+     and associate it with the extractor by calling function
+     <TT>MT_SetFocus</TT>. 
+<LI> Call <TT>MT_ExtractTesselation</TT>.
+<LI> Call either <TT>MT_ExtractedTiles</TT> to get the active tiles of 
+     the resulting tesselation, or <TT>MT_AllExtractedTiles</TT> to get 
+     all the tiles of the resulting tesselation.
+     The <TT>MT_INDEX</TT>es of such tiles are returned into an array.
+<LI> Access the arrays to find the geometry (and, if enabled, the
+     adjacency information) for each extracted tile:
+     <UL>
+     <LI> The <TT>MT_INDEX</TT>es of the vertices of a tile are returned
+          by functions <TT>MT_TileVertices</TT> (direct reference to the
+          array of tile vertices within the MT),
+          <TT>MT_CopyTileVertices</TT> (copy of such array),
+          <TT>MT_TileVertex</TT> (return a single vertex) of the MT.
+     <LI> Given the <TT>MT_INDEX</TT> of a vertex, its coordinates are 
+          returned by functions <TT>MT_VertexCoords</TT> (direct reference to the
+          array of vertex coordinates within the MT),
+          <TT>MT_CopyVertexCoords</TT> (copy of such array),
+          <TT>MT_VertexCoord</TT> (return a single coordinate), 
+          <TT>MT_VertexX, MT_VertexY, MT_vertexZ</TT>
+          (shortcuts for accessing the first three coordinates) of the MT.
+     <LI> The <TT>MT_INDEX</TT>es of the adjacent tiles of a given tile are
+          returned by function <TT>MT_TileAdj</TT> of the extractor.
+     </UL>
+</OL>
+
+The user program may perform several extraction queries from the same
+extractor by changing the resolution filter and/or the focus condition
+between two successive queries.
+<P>
+
+The (resolution filter or focus) condition associated with an extractor
+may be changed in two ways:
+<OL>
+<LI> By replacing it with another condition: create 
+     another condition and call <TT>MT_SetFilter</TT> or <TT>MT_SetFocus</TT> 
+     with such new condition.
+<LI> By modifying the condition through its access functions (which 
+     depend on the specific subclass of <TT>MT_CondClass</TT>): the
+     extractor contains a direct reference to the condition, thus
+     such modifications are visible within the extractor.
+</OL>
+
+<!-- (5.3) --><H3>An example</H3>
+
+We provide here the template of a program that extracts tesselations 
+form an MT.
+In the example, a static extractor is used. A program using a dynamic
+extractor or a local extractor is written in a similar way.
+<P>
+
+We assume that header files <TT>myfilter.h</TT> and 
+<TT>myfocus.h</TT> define the 
+resolution filter condition and the focus condition needed by the
+application, as two subclasses of <TT>MT_CondClass</TT> named
+<TT>MyFilterCondClass</TT> and <TT>MyFocusCondClass</TT>, respectively.
+Names <TT>MyFilterCond</TT> and <TT>MyFocusCond</TT> denote 
+the pointer types to such classes.
+<P>
+
+<PRE>
+#include "mt_extra.h"
+#include "myfilter.h"
+#include "myfocus.h"
+
+....
+
+MT_MultiTesselation mt;  /* the MT to be used */
+MT_StaticExtractor ex    /* the extractor */
+MyFilterCond flt;        /* the resolution filter condition */
+MyFocusCond fcs;         /* the focus condition */
+
+MT_INDEX * active_tiles; /* array for active extracted tiles */
+MT_INDEX * other_tiles;  /* array for non-active extracted tiles */
+MT_INXED active_num;     /* number of active extracted tiles */
+MT_INXED other_num;      /* number of non-active extracted tiles */
+
+/* create mt as a 2-dimensional MT (tiles=triangles) in 3D */
+mt = new MT_MultiTesselationClass(3,2);
+
+/* read the MT from some file */
+mt->MT_Read(...);
+
+/* create the resolution filter and the focus condition */
+flt = new MyFilterCondClass(... parameters ...);
+fcs = new MyFocusCondClass(... parameters ...);
+
+/* create the extractor and set the extraction conditions */
+ex = new MT_StaticExtractorClass(mt);
+
+/* associate the conditions with the extractor */
+ex->MT_SetFilter(flt);
+ex->MT_SetFocus(fcs);
+
+/* main loop */
+while (... we want to continue ...)
+{
+   /* extract a tesselation */
+   ex->MT_ExtractTesselation();
+
+   /* do something with the extracted tesselation; here, 
+      we print the extracted triangles */
+
+   /* get all extracted tiles */
+   ex->MT_AttExtractedTiles(&active_tiles, &active_num,
+                            &other_tiles, &other_num);
+
+   /* print active tiles */
+   for (i=0; i &lt; active_num; i++)
+   {
+      printf("Active tile %d: ", i);
+      for (j=0; j &lt; 3; j++)
+      {  
+         printf("(%f %f %f) ", 
+                mt->MT_vertexX(mt->MT_TileVertex(active_tiles[i],j)),
+                mt->MT_vertexY(mt->MT_TileVertex(active_tiles[i],j)),
+                mt->MT_vertexZ(mt->MT_TileVertex(active_tiles[i],j)));
+      
+      }
+      printf("\n");
+   }
+
+   /* print non-active tiles */
+   ... same as before, using counter other_num and array other_tiles ...
+
+   /* prepare for next extraction, if desired */
+
+   if (... we want to perform another extraction ...)
+   {
+      ... change flt and/or fcs by using their access functions 
+          defined in files myfilter.h and myfocus.h ...
+   }
+   else break; /* we do not want to continue */
+}
+
+<!-------------------------------------------------------------------------->
+
+</BODY>
+
+</HTML>

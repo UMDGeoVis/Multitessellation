@@ -1,0 +1,92 @@
+<HTML>
+
+<TITLE>The MT Package - File formats</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (12) --><H2>FILE FORMATS</H2>
+
+<!-- (12.1) --><H3>Basic File format</H3>
+
+Established by class MT_PersistentClass.
+
+<PRE>
+MT-FILE
+'class keyword' 'class parameters'
+MT-OBJECT 'object parameters'
+MT-START-DESCRIPTION
+'description'
+MT-END-DESCRIPTION
+MT-ENCODE 'format'
+'object data'
+</PRE>
+
+where:
+
+<UL>
+<LI> <TT>class keyword</TT> = usually, the name of the class.
+<LI> <TT>class parameters</TT> = parameters for the class constructor, used to
+ decide whether the object contained in the file matches with the
+ object that is reading itself from the file.
+<LI> <TT>object parameters</TT> = parameters (e.g., sizes) used to allocate the
+ internal structures of the object.
+<LI> <TT>description</TT> = any text, not longer than MT_DESCR_LEN.
+<LI> <TT>format</TT> = format in which object data are written (BINARY or ASCII).
+<LI> <TT>object data</TT> = data used to fill the internal structures of the object.
+</UL>
+
+<!-- (12.2) --><H3>Instantiation of the File Format</H3>
+
+<H4>class <TT>MT_TileSetClass</TT></H4>
+
+<UL>
+<LI> <TT>class keyword</TT> = MT_TileSet 
+<LI> <TT>class parameters</TT> = '#vertex coord' '#tile vertices'
+<LI> <TT>object parameters</TT> = '#vertices' '#tiles'
+<LI> <TT>object data</TT> = list of all vertices as tuples of reals,
+     list of all tiles as tuples of vertex indexes
+     (where index 1 is the first vertex in the vertex list)
+</UL>
+
+<H4>class <TT>MT_MultiTesselationClass</TT></H4>
+
+<UL>
+<LI> <TT>class keyword</TT> = MT_MultiTesselation 
+<LI> <TT>class parameters</TT> = '#vertex coord' '#tile vertices'
+<LI> <TT>object parameters</TT> = '#vertices' '#tiles' '#nodes' '#arcs'
+<LI> <TT>object data</TT> = list of vertices and tiles as for 
+     <TT>MT_TileSetClass</TT>,
+     list of all arcs as a pair 'source' 'destination' plus
+     a list of tiles labelling the arc.
+</UL>
+
+<!--
+<H4>class MT_BuildingInterfaceClass</H4>
+
+<UL>
+<LI> <TT>class keyword</TT> = MT_History
+<LI> <TT>class parameters</TT> = '#vertex coord' '#tile vertices'
+<LI> <TT>object parameters</TT> = '#vertices' '#tiles' '#updates' 'history type'
+<LI> <TT>object data</TT> = list of all vertices as tuples of reals,
+     list of all updates as '#removed tiles' 'list of removed
+     tiles' '#new tiles' 'list of new tiles',
+     list of all tiles as tuples of vertex indexes.
+</UL>
+
+<H4>class MT_AttrBuildingInterfaceClass</H4>
+
+<UL>
+<LI> <TT>class keyword</TT> = MT_AttrHistory
+<LI> <TT>class parameters</TT> = none
+<LI> <TT>object parameters</TT> = '# attributes' 'attribute class'
+<LI> <TT>object data</TT> = list of all attributes as pairs 'entity' 'value'
+                (index of the entity receiving the attribute, value
+                of the attribute)
+</UL>
+-->
+
+</BODY>
+
+</HTML>

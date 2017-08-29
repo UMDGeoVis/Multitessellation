@@ -1,0 +1,481 @@
+<HTML>
+
+<TITLE>The MT Package - How to build an MT with features</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (7) --><H2>HOW TO BUILD AN MT WITH A CERTAIN SET OF FEATURES</H2>
+
+If we have decided that a feature of an MT 
+must be stored in an attribute table,
+then we must provide a way to compute the values for filling such table.
+<P>
+
+Attribute values can be computed:
+<UL>
+<LI> While constructing the MT
+<LI> After the MT has been built
+</UL>
+
+<!-- (7.1) --><H3>Guidelines</H3>
+
+<OL>
+<LI> Define a <B>building interface for the feature</B>.
+     This will be a class that uses an attribute building interface
+     for values of the same type as the internal attribute table used for 
+     storing the feature.
+     <P>
+     Example: for building tile errors (which are stored in a float 
+     attribute table) we use a float attribute building interface
+     (class 
+     <TT><A HREF="core.html#XXXBUILD">FloatBuildingInterfaceClass</A></TT>).
+     <P>
+     This class, that we call <TT>WithYYYBuildingInterfaceClass</TT>
+     (where <TT>YYY</TT> is the name of the feature)
+     will provide functions to record the features, 
+     and to build an attribute table storing the features.
+     <P>
+
+<LI> If attributes are built at the same time as the MT,
+     define a
+     <B>building interface for the MT having the feature</B>.
+     This will be a subclass of 
+     <TT><A HREF="core.html#BUILDINTERF">MT_BuildingInterfaceClass</A></TT>
+     and of <TT>WithYYYBuildingInterfaceClass</TT>.
+     It will have all the functions of class
+     <TT>MT_BuildingInterfaceClass</TT>,
+     plus the additional features to record and to convert the features
+     (inherited from <TT>WithYYYBuildingInterfaceClass</TT>).
+     <P>
+     Then, use such building interface within a program for iterative
+     refinement or coarsening of a tesselation:
+     record the MT history and the attributes,
+     and then convert both history and attributes into an MT and its
+     attribute table, respectively.
+     <P>
+
+<LI> If attributes are built after the construction of the MT,
+     use class <TT>WithYYYBuildingInterfaceClass</TT> directly for
+     recording attributes and then converting them into the
+     attribute table of the existing MT.
+
+</OL>
+
+<!-- (7.2) --><H3>Defining a building interface for a feature - An example</H3>
+
+We define the building interface for tile errors, called 
+<TT><A HREF="exten.html#WITHTILERRBUILD">TileErrorBuildingInterfaceClass</A></TT>.
+This class contains a pointer to an object of the appropriate subclass 
+of <TT>MT_AttrBuildingInterfaceClass</TT>, in this case an
+<TT>MT_FloatBuildingInterfaceClass</TT>.
+<P>
+
+It defines a number of functions, all implemented through the auxiliary
+float building interface.
+These are the functions that, added to an MT building interface,
+will allow building an MT with tile errors.
+
+<UL>
+<LI> <TT>MakeTileError</TT>: record the error of a tile during 
+     the refinement / coarsening of a tesselation.
+<LI> <TT>StartTileErrorHistory, EndTileErrorHistory</TT>:
+     start and end recording tile errors.
+<LI> <TT>ConvertTileErrors</TT>: convert the tile errors just recorded into
+     an attribute table.
+     Here, we need to specify that the auxiliary
+     float building interface is for tiles (it could be for
+     vertices) before calling the corresponding function).
+<LI> <TT>SetTargetTileErrorTable</TT>: given an object of class
+     <TT>WithTileErrorTableClass</TT> (in practice, it will be 
+     a specialized MT, subclass of such class), set the internal 
+     float attribute table of such object as the float attribute
+     table to be built.
+<LI> <TT>SetTileErrorDescription, TheTileErrorDescription</TT>: set and
+     return the textual description to be used in the file
+     that will contain tile errors.
+</UL>
+
+<PRE>
+typedef class
+        TileErrorBuildingInterfaceClass * TileErrorBuildingInterface;
+
+class TileErrorBuildingInterfaceClass : public virtual MT_BuildingBaseClass
+{
+  protected:
+
+  /* Auxiliary building interface for float attributes */
+  MT_FloatBuildingInterface error_build;
+
+  public:
+
+  /*  Constructor and destructor.  */
+  TileErrorBuildingInterfaceClass(void)
+  {  error_build = new MT_FloatBuildingInterfaceClass();  }
+  ~TileErrorBuildingInterfaceClass(void);
+  {  if (error_build) delete error_build;  error_build = NULL;  }
+
+  /*  Record the error value for tile t.  */
+  void MakeTileError(MT_INDEX t, float err)
+  {  error_build->MT_MakeAttrValue(t,err);  }
+
+  /*  Start and end the tracing of tile errors.  */
+  void StartTileErrorHistory(void) {  error_build->MT_StartAttrHistory();  }
+  void EndTileErrorHistory(void) {  error_build->MT_EndAttrHistory();  }
+
+  /*  Build a tile error table from the recorded errors.  */                     
+  int ConvertTileErrors(void)
+  {  ConnectTileAttrBuilder(error_build); /* inform that it is for tiles */
+     error_build->MT_AttrConvert();
+  }
+
+<!--
+  /*  Write the recorded tile errors.  */                     
+  void WriteTileErrors(FILE * fd, int file_encoding = MT_ASCII_ENCODING)
+  {  error_build->MT_Write(fd, file_encoding);  }
+
+  /*  Read previously recorded tile errors and convert them into
+      a tile error table.  */                     
+  void ReadTileErrors(FILE * fd)
+  {  ConnectTileAttrBuilder(error_build);
+     error_build->MT_Read(fd);
+  }
+-->
+  /*  Set the tile error table to be built.  */                     
+  void SetTargetTileErrorTable(WithTileErrorTableClass * m)
+  {  error_build->MT_SetTargetAttrTable(m->TheTileErrorTable());  }
+
+  /*  Set and return the textual description used in the tile error file.
+      String s is at most MT_DESCR_LEN characters.  */                     
+  void SetTileErrorDescription(char * s)  
+  {  error_build->MT_SetDescription(s);  }
+  void TheTileErrorDescription(char * s)
+  {  error_build->MT_TheDescription(s);  }
+
+};
+</PRE>
+
+<!-- (7.3) -->
+<H3>Defining a building interface for an MT with features - An example</H3>
+
+Now, we define the building interface for an MT with tile errors.
+Tile errors are typically computed during the same process of
+refinement or coarsening that builds the MT. Thus, it is 
+reasonable to record them during MT construction.
+<P>
+
+The class for our building interface is called 
+<TT><A HREF="exten.html#FIELDERRBUILD">FieldWithErrorBuildingInterfaceClass</A></TT>.
+We maintain the prefix "FieldWithError" for 
+simmetry with the name of class <TT>FieldWithErrorClass</TT>, even if vertex
+fields (since not stored) are not built by the interface.
+<P>
+
+Class <TT>FieldWithErrorBuildingInterfaceClass</TT> will be a subclass of
+<TT><A HREF="core.html#BUILDINTERF">MT_BuildingInterfaceClass</A></TT>
+and of 
+<TT><A HREF="exten.html#WITHTILERRBUILD">TileErrorBuildingInterfaceClass</A></TT>.
+<P>
+
+Functions of the first superclass will be used to record the history
+of tesselation refinement/simplification and to build the MT.
+Functions of the second superclass will be used to record the
+tile errors during tesselation refinement/simplification and to build the 
+attribute table containing such errors.
+<P>
+
+<PRE>
+typedef class FieldWithErrorBuildingInterfaceClass *
+                                       FieldWithErrorBuildingInterface;
+
+class FieldWithErrorBuildingInterfaceClass :
+                 public virtual MT_BuildingInterfaceClass,
+                 public virtual TileErrorBuildingInterfaceClass
+{
+  public:
+
+  /*  Constructor.  */
+  FieldWithErrorBuildingInterfaceClass(void)
+  :      MT_BuildingInterfaceClass(),
+         TileErrorBuildingInterfaceClass()
+  { }
+
+};
+</PRE>
+
+<!-- (7.4) --><H3>Directly Building an MT with Features</H3>
+
+We already know how to <A HREF="corebld.html">build a plain MT</A> 
+(no attributes).
+<P>
+
+Suppose that we want to build an MT with a feature <TT>YYY</TT>
+associated with its tiles, and a feature <TT>ZZZ</TT> associated with
+its vertices (both stored into attribute tables).
+<P>
+
+We must use a building interface that belongs to a subclass of
+<TT><A HREF="core.html#BUILDINTERF">MT_BuildingInterfaceClass</A></TT>
+(providing the functions for building the MT), of 
+<TT>YYYBuildingInterfaceClass</TT> and of
+<TT>ZZZBuildingInterfaceClass</TT> (providing
+the functions for building the attribute table that stores
+features <TT>YYY</TT> and <TT>ZZZ</TT>, respectively).
+<P>
+
+Such building interface provides functions <TT>MakeYYY</TT> (inherited from
+<TT>YYYBuildingInterfaceClass</TT>) to record the <TT>YYY</TT> attribute of
+a tile, and <TT>MakeZZZ</TT> (inherited from
+<TT>ZZZBuildingInterfaceClass</TT>) to record the <TT>ZZZ</TT> attribute of
+a vertex.
+<P>
+
+Here, we list the additional operations to be performed with respect
+to the construction of a plain MT.
+
+<H4>History recording</H4>
+
+<OL>
+<LI> After calling <TT>MT_StartHistory</TT>, call <TT>StartYYYHistory</TT> and
+     <TT>StartZZZHistory</TT> in order to start recording <TT>YYY</TT> and
+     <TT>ZZZ</TT> attributes as well.
+<LI> Function <TT>MakeYYY</TT>, which records the <TT>YYY</TT> attribute 
+     of a tile <TT>T</TT>, can be called at 
+     any point during the process of refinement or simplification,
+     after <TT>MT_MakeTile</TT> has been called for tile <TT>T</TT>.
+<LI> Function <TT>MakeZZZ</TT>, which records the <TT>ZZZ</TT> attribute of
+     a vertex <TT>V</TT>, can be called at any point during the process of
+     refinement or simplification, after <TT>MT_UseVertex</TT> has already
+     been called on vertex <TT>V</TT> at least once.
+<LI> After calling <TT>MT_EndHistory</TT>, call <TT>EndYYYHistory</TT> and
+     <TT>EndZZZHistory</TT> in order to end recording attributes as well.
+</OL>
+
+The attribute value for a vertex or a tile may be recorded more than once.
+The last value will overwrite the previous ones.
+<P>
+
+<H4>History conversion</H4>
+
+<OL>
+<LI> Create separately an MT that belongs to a subclass of
+     <TT>MT_MultiTesselationClass</TT> and of <TT>WithYYYTableClass</TT>.
+<LI> Connect such MT to the building interface three times: as the
+     target MT (functions <TT>MT_SetTarget</TT>, and as the target
+     for construction of the tables containing features <TT>YYY</TT> and
+     <TT>ZZZ</TT>, respectively (functions <TT>SetTargetYYYTable</TT> and
+     <TT>SetTargetZZZTable</TT>).
+<LI> After having called function <TT>MT_Convert</TT>, call
+     <TT>YYYConvert</TT> and <TT>ZZZConvert</TT>; this will build the
+     attribute tables for tile feature <TT>YYY</TT> and vertex feature
+     <TT>ZZZ</TT>.
+</OL>
+
+<H4>An example</H4>
+
+We refer to the same example as above, where <TT>YYY</TT> = tile error,
+and the building interface is <TT>FieldWithErrorBuildingInterfaceClass</TT>.
+<P>
+
+We provide here the template of a program that
+and builds an MT of class 
+<TT><A HREF="exten.html#FIELDMT">FieldWithErrorClass</A></TT> 
+by using a building interface of class 
+<TT><A HREF="exten.html#FIELDERRBUILD">FieldWithErrorBuildingInterfaceClass</A></TT>.
+<P>
+
+We assume that, given a vertex <TT>V</TT> of the current tesselation within
+the user program, the <TT>MT_INDEX</TT> field associated with <TT>V</TT> is
+named <TT>V.index</TT>; and, given a tile <TT>T</TT>, the <TT>MT_INDEX</TT>
+field associated with <TT>T</TT> is named <TT>T.index</TT>.
+<P>
+
+<PRE>
+#include "mt_build.h"
+#include "fieldmt.h" /* header of class FieldWithErrorClass
+                        and FieldWithErrorBuildingInterfaceClass */
+....
+
+FieldWithErrorBuildingInterface bi; /* the building interface */
+FieldWithError mt;                  /* the MT to be built */
+
+/* create mt as a 2-dimensional scalar field (graph = triangles in 3D) */
+mt = new FieldWithErrorClass(3,2); 
+
+/* create the building interface */
+bi = new FieldWithErrorBuildingInterfaceClass(); 
+
+/* start history recording */
+bi->MT_StartHistory(3,2, MT_REFINING);
+
+/* start tile error recording */
+bi->StartTileErrorHistory();
+
+/* initialize all MT_INDEX fields of vertices and tiles */
+for (... every vertex V of the initial tesselation ...)
+{  V.index = MT_NULL_INDEX;  }
+for (... every tile T of the initial tesselation ...)
+{  T.index = MT_NULL_INDEX;  }
+
+/* record the update that creates the initial tesselation */
+for (... every tile T of the initial tesselation ...)
+{
+  V1, V2, V3 =  ... the three vertices of T ...
+  V1.index = bi->MT_UseVertex(V1.index, V1.coordinates);
+  V2.index = bi->MT_UseVertex(V2.index, V1.coordinates);
+  V3.index = bi->MT_UseVertex(V3.index, V1.coordinates);
+  T.index = bi->MT_MakeTile();
+  /* now, we can record the tile error */
+  bi->MakeTileError(T.index, T.error);
+}
+MT_EndUpdate();
+
+/* main loop */
+for (... every update performed on the current tesselation ...)
+{
+   /* record the current update */
+   for (... every tile T deleted in this update ...)
+   {  bi->MT_KillTile(T.index);  }
+   for (... every new vertex V created in this update ...)
+   {  V.index = MT_NULL_INDEX;  }
+   for (... every new tile T created in this update ...)
+   {
+      V1, V2, V3 =  ... the three vertices of T ...
+      V1.index = bi->MT_UseVertex(V1.index, V1.coordinates);
+      V2.index = bi->MT_UseVertex(V2.index, V1.coordinates);
+      V3.index = bi->MT_UseVertex(V3.index, V1.coordinates);
+      T.index = bi->MT_MakeTile();
+      /* now, we can record the tile error */
+      bi->MakeTileError(T.index, T.error);
+   }
+   MT_EndUpdate();
+}
+
+/* record an update deleting the final tesselation */
+for (... every new tile T of the current tesselation ...)
+{  bi->MT_KillTile(T.index);  }
+MT_EndUpdate();
+
+/* end history recording */
+bi->MT_EndHistory();
+
+/* end tile error recording */
+bi->EndTileErrorHistory();
+
+/* set the description string to be associated with the resulting MT */
+bi->MT_SetDescription("A 2-dimensional field");
+
+/* set the description string to be associated with the resulting 
+   attribute table */
+bi->SetTileErrorDescription("The tile errors of a 2-dimensional field");
+
+/* connect mt to the building interface */
+bi->MT_SetTarget(mt);
+
+/* connect the error table of the mt to the error building interface */
+bi->SetTargetTileErrorTable(mt);
+
+/* build mt from the history just recorded */
+bi->MT_Convert();
+
+/* build the tile error table */
+bi->ConvertTileErrors();
+</PRE>
+
+<!-- (7.5) --><H3>Building Features for an Existing MT</H3>
+
+Suppose that we know how to compute a certain feature <TT>YYY</TT>
+for the tiles (or for the vertices) of an existing MT, 
+and we want to add such information to the MT.
+<P>
+
+We use the building interface for the feature <TT>YYY</TT>, i.e.,
+class <TT>YYYBuildingInterfaceClass</TT> for recording the
+computed values and converting them into the attribute table of
+our MT (which must belong to a subclass of <TT>WithYYYTableClass</TT>).
+
+<H4>Feature recording</H4>
+
+For every tile (or vertex) or the MT, we compute the feature value
+and call <TT>MakeYYY</TT> to record it.
+<P>
+
+Here, the <TT>MT_INDEX</TT> passed to function <TT>MakeYYY</TT> is
+exactly the <TT>MT_INDEX</TT> identifying such tile (or vertex) in
+the MT already built.
+
+<H4>Feature conversion</H4>
+
+We call function <TT>SetTargetYYY</TT> on the existing MT, in order
+to specify that the attribute
+table to be built is the internal <TT>YYY</TT> table of such an MT.
+<P>
+
+Then, we call <TT>YYYConvert</TT>. As a result, the internal <TT>YYY</TT>
+table of our MT will be filled with the recorded values.
+Now, the <TT>YYY</TT> building interface can be deleted.
+
+<H4>An example</H4>
+
+We refer to the usual example, where <TT>YYY</TT> = tile error,
+and the related building interface is 
+<TT><A HREF="exten.html#TILERRBUILD">TileErrorBuildingInterfaceClass</A></TT>.
+<P>
+
+If tile errors are not computed by the same program that builds the
+MT by progressively refining or coarsening a tesselation, they can
+be estimated later with some specialized program.
+
+We provide here the template of a program that adds tile errors to an MT 
+of class <TT><A HREF="exten.html#FIELDMT">FieldWithErrorClass</A></TT>.
+
+<PRE>
+#include "mt_build.h"
+#include "fieldmt.h" /* header of class FieldWithErrorClass */
+....
+
+TileErrorBuildingInterface bi;   /* tile error building interface */
+FieldWithError mt;               /* MT to which tile errors must be added */
+
+MT_INDEX t;     /* a tile of mt */
+
+/* create mt as a 2-dimensional scalar field (graph = triangles in 3D) */
+mt = new FieldWithErrorClass(3,2); 
+
+/* read the MT from some file */
+mt->MT_Read(...);
+
+/* create the building interface */
+bi = new TileErrorBuildingInterfaceClass(); 
+
+/* start tile error recording */
+bi->StartTileErrorHistory();
+
+/* loop on the MT tiles to compute and record their errors */
+for ( t=1; t<=mt->MT_TileNum(); t++)
+{
+  ... compute the approximation error of t ...
+  ERR = ... the computed error ...
+  bi->MakeTileError(t, ERR);
+}
+
+/* end tile error recording */
+bi->EndTileErrorHistory();
+
+/* set the description string to be associated with the resulting 
+   attribute table */
+bi->SetTileErrorDescription("The tile errors of a 2-dimensional field");
+
+/* connect the error table of the mt to the error building interface */
+bi->SetTargetTileErrorTable(mt);
+
+/* build the tile error table */
+bi->ConvertTileErrors();
+</PRE>
+
+<!-------------------------------------------------------------------------->
+
+</BODY>
+
+</HTML>

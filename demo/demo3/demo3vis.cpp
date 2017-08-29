@@ -1,0 +1,836 @@
+/*****************************************************************************
+The Multi-Tesselation (MT) version 1.0, 1999.
+A dimension-independent package for the representation and manipulation of
+spatial objects as simplicial complexes at multiple resolutions.
+
+Copyright (C) 1999 DISI - University of Genova, Italy.
+Group of Geometric Modeling and Computer Graphics DISI.
+Program written by Paola Magillo <magillo@disi.unige.it>.
+DISI - University of Genova, Via Dodecaneso 35, 16146 Genova - ITALY.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*****************************************************************************/
+
+/* 
+BOX DEMO
+by Paola Magillo - DISI - University of Genova - Italy
+Written JANUARY 1999, revised DECEMBER 1999, revised NOVEMBER 2005
+*/
+
+/* ----------------------------------------------------------------------- */
+/*                              include                                    */
+/* ----------------------------------------------------------------------- */
+
+#include <stdlib.h>
+#include <stdio.h>
+//#include <values.h>
+#include <GL/glut.h>
+#include <math.h>
+
+#include "geo.h" /* for TriangleNormal */
+#include "demo3.h"
+
+/* ----------------------------------------------------------------------- */
+/*                               MACROS                                    */
+/* ----------------------------------------------------------------------- */
+
+/* Drawing style: hidden wireframe, solid (flat shading). */
+#define HIDDEN_WIRE 1
+#define SOLID_FACES 2
+
+/* Constant for hidden wireframe. */
+const float ZTWIST=0.003f;  /*CIGNONI: 0.0005f;*/
+
+/* Direction and speed for movement of the box. */
+float move_vec[3];
+float speed = 1.0;
+
+/* Step for rotation angles (in degrees). */
+#define ANGLE_STEP 5.0
+
+/* Rotation angles (in degrees). */
+static float x_angle = 0.0;
+static float y_angle = 0.0;
+
+/* Step for translation vectors. */
+#define MOVE_STEP 0.5
+
+/* Translation vectors. */
+static float x_move = 0.0;
+static float y_move = 0.0;
+
+/* Select algorithm for drawing in hidden wireframe mode. */
+#ifdef HIDDEN_ZBUF
+#define drawHidden drawHidden_zbuffer
+        /* fast bu result is not always correct */
+#else
+#ifdef HIDDEN_BLACK
+#define drawHidden drawHidden_black
+        /* only good for closed surfaces seen from outside */
+#else
+#ifdef HIDDEN_STENCIL
+#define drawHidden drawHidden_stencil
+        /* correct but slow */
+#else
+#define drawHidden drawHidden_zbuffer
+        /* default */
+#endif
+#endif
+#endif
+
+/* ----------------------------------------------------------------------- */
+/*                               GLOBAL STATE                              */
+/* ----------------------------------------------------------------------- */
+
+char nome[50];
+int numMesh = 0;
+
+/* Flag if idle callback set. */
+int is_idle = 0;
+
+/* Length of scene diagonal. */
+float diagonal;
+
+/* Window identifiers: 0 = graphics, 1 = dialog. */
+int window[2];
+
+/* Colors for graphic window. */
+GLfloat back_color[3] = { 0.0, 0.0, 0.0 }; /* background */
+GLfloat fore_color[3] = { 1.0, 1.0, 1.0 }; /* non-active triangles */
+GLfloat high_color[3] = { 1.0, 1.0, 0.6 }; /* active triangles */
+GLfloat box_color[3]  = { 1.0, 0.0, 0.0 }; /* box */
+GLfloat fore_fillcolor[3] = { 0.0, 0.0, 0.0 };
+GLfloat high_fillcolor[3] = { 0.0, 0.0, 0.0 };
+GLfloat bkfc_color[3] = { 0.5, 0.2, 0.8 }; /* non-active, back-faced tr. */
+GLfloat bkhi_color[3] = { 0.7, 0.5, 0.8 }; /* active, back-faced tr. */
+
+GLfloat white[3] = { 1.0, 1.0, 1.0 }; 
+
+/* Colors for dialog window */
+GLfloat page_color[3] = { 1.0, 1.0, 1.0 };
+GLfloat text_color[3] = { 0.0, 0.0, 0.0 };
+
+/* Scale factor. */
+static float zoom_factor = 2.0;
+
+/* Drawing style. */
+static int style = SOLID_FACES;
+
+/* Window dimensions */
+static float window_w[2] = { 400.0, 280.0 };
+static float window_h[2] = { 400.0, 400.0 };
+
+/* Flag if representation needs to be recomputed */
+int need_new_mesh;
+
+/* Flag if arrow keys rotate or translate. */
+#define TO_ROTATE 1
+#define TO_TRANSLATE 2
+static int arrow_use = TO_ROTATE;
+
+/* ----------------------------------------------------------------------- */
+/*                      AUXILIARY FUNCTIONS FOR DRAWING                    */
+/* ----------------------------------------------------------------------- */
+
+void setTriangle9f(float x1, float y1, float z1,
+                   float x2, float y2, float z2,	
+                   float x3, float y3, float z3)
+{
+  float nx, ny, nz;
+  /* the following function is defined in geo.h */
+  TriangleNormal(x1,y1,z1,x2,y2,z2,x3,y3,z3,&nx,&ny,&nz);
+    glNormal3f(nx,ny,nz);
+    glVertex3f(x1,y1,z1);
+    glVertex3f(x2,y2,z2);
+    glVertex3f(x3,y3,z3);
+}
+
+void setTriangle(MT_INDEX t)
+{
+  MT_INDEX * v;
+  mt->MT_TileVertices(t,&v);
+  setTriangle9f(mt->MT_VertexX(v[0]),mt->MT_VertexY(v[0]),
+                mt->MT_VertexZ(v[0]),
+                mt->MT_VertexX(v[1]),mt->MT_VertexY(v[1]),
+                mt->MT_VertexZ(v[1]),
+                mt->MT_VertexX(v[2]),mt->MT_VertexY(v[2]),
+                mt->MT_VertexZ(v[2]));
+}
+
+/* Transform the scene in such a way that it fits in the default OpenGL
+   view volume (the cube with coordinates between -1 and +1). */
+void trasfScene(void)
+{
+  float cX, cY, cZ; /* coordinates of the center */
+
+  cX = 0.5 * (mt->MT_MaxX() + mt->MT_MinX());
+  cY = 0.5 * (mt->MT_MaxY() + mt->MT_MinY());
+  cZ = 0.5 * (mt->MT_MaxZ() + mt->MT_MinZ());
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glOrtho(-3.0,3.0, -3.0,3.0, -16.0,16.0);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  
+  glTranslatef(x_move,y_move,0.0);/****/
+
+  glRotatef(x_angle,1.0,0.0,0.0);
+  glRotatef(y_angle,0.0,1.0,0.0);
+  glScalef(2.0*zoom_factor/diagonal, 2.0*zoom_factor/diagonal,
+           2.0*zoom_factor/diagonal);
+  glTranslatef(-cX, -cY, -cZ);
+}       
+
+void setLight(void)
+{
+  static GLfloat pos0[4] = {0.0, 10.0, 50.0, 0.0 };
+  static GLfloat ambient0[4] = { 0.1, 0.1, 0.1, 1.0 };
+  static GLfloat diffuse0[4] = { 0.7, 0.7, 0.7, 1.0 };
+  static GLfloat pos1[4] = {0.0, 10.0, -50.0, 0.0 };
+  static GLfloat ambient1[4] = { 0.1, 0.1, 0.1, 1.0 };
+  static GLfloat diffuse1[4] = { 0.6, 0.6, 0.6, 1.0 };
+  glLightfv( GL_LIGHT0, GL_POSITION, pos0 );
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
+  glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
+  glLightfv( GL_LIGHT1, GL_POSITION, pos1 );
+  glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1);
+  glLightfv(GL_LIGHT1, GL_AMBIENT, ambient1);
+}
+
+/* Redraw all windows. */
+void redrawWindows(void)
+{
+  int w;
+  for (w=0;w<2;w++)
+  {  glutSetWindow(window[w]);
+     glutPostRedisplay();
+  }
+}
+
+/* ----------------------------------------------------------------------- */
+/*                           DRAWING FUNCTIONS                             */
+/* ----------------------------------------------------------------------- */
+
+void drawAxis(void)
+{
+  static float red[3] = {1.0, 0.0, 0.0};
+  static float green[3] = {0.0, 1.0, 0.0};
+  static float blue[3] = {0.0, 0.0, 1.0};
+  float cX, cY, cZ; /* coordinates of the center */
+
+  cX = 0.5 * (mt->MT_MaxX() + mt->MT_MinX());
+  cY = 0.5 * (mt->MT_MaxY() + mt->MT_MinY());
+  cZ = 0.5 * (mt->MT_MaxZ() + mt->MT_MinZ());
+
+  glPushAttrib(GL_LINE_BIT);
+  glLineWidth(3.0);
+  glBegin(GL_LINES);  
+    /* z */
+    glColor3fv(blue);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,blue);
+    glVertex3f(cX, cY, cZ);
+    glVertex3f(cX, cY, 4.0*diagonal);
+    /* y */
+    glColor3fv(green);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,green);
+    glVertex3f(cX, cY, cZ);
+    glVertex3f(cX, 4.0*diagonal, cZ);
+    /* x */
+    glColor3fv(red);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,red);
+    glVertex3f(cX, cY, cZ);
+    glVertex3f(4.0*diagonal, cY, cZ);
+  glEnd();
+  glPopAttrib();
+
+  glPushAttrib(GL_POINT_BIT);
+  glPointSize(6.0);
+  glBegin(GL_POINTS);
+    /* z */
+    glColor3fv(blue);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,blue);
+    glVertex3f(cX, cY, 2.0*mt->MT_MaxZ());
+    /* y */
+    glColor3fv(green);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,green);
+    glVertex3f(cX, 2.0*mt->MT_MaxY(), cZ);
+    /* x */
+    glColor3fv(red);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,red);
+    glVertex3f(2.0*mt->MT_MaxX(), cY, cZ);  
+  glEnd();
+  glPopAttrib();
+
+}
+
+void drawFocus(void)
+{
+    float minP[3], maxP[3];
+    focus->TheBox(&minP[0],&minP[1],&minP[2],
+                  &maxP[0],&maxP[1],&maxP[2]);
+    glColor3fv(box_color);
+    glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, box_color);
+    glLineWidth(3.0);
+    glBegin(GL_LINE_LOOP);
+      glVertex3f(minP[0],minP[1],minP[2]);
+      glVertex3f(minP[0],minP[1],maxP[2]);
+      glVertex3f(maxP[0],minP[1],maxP[2]);
+      glVertex3f(maxP[0],minP[1],minP[2]);
+    glEnd();
+    glBegin(GL_LINE_LOOP);      
+      glVertex3f(maxP[0],maxP[1],minP[2]);
+      glVertex3f(minP[0],maxP[1],minP[2]);
+      glVertex3f(minP[0],maxP[1],maxP[2]);
+      glVertex3f(maxP[0],maxP[1],maxP[2]);
+    glEnd();
+    glBegin(GL_LINE_LOOP);
+      glVertex3f(minP[0],minP[1],minP[2]);
+      glVertex3f(minP[0],maxP[1],minP[2]);
+      glVertex3f(maxP[0],maxP[1],minP[2]);
+      glVertex3f(maxP[0],minP[1],minP[2]);
+    glEnd();
+    glBegin(GL_LINE_LOOP);
+      glVertex3f(minP[0],minP[1],maxP[2]);
+      glVertex3f(maxP[0],minP[1],maxP[2]);
+      glVertex3f(maxP[0],maxP[1],maxP[2]);
+      glVertex3f(minP[0],maxP[1],maxP[2]);      
+    glEnd();
+}
+
+/* Solid, flat shading. */
+void drawSolid(void)
+{
+  int i;
+  MT_INDEX * active_tri;
+  MT_INDEX * other_tri;
+  MT_INDEX num_active;
+  MT_INDEX num_other;
+  
+  ex->MT_AllExtractedTiles(&active_tri,&num_active,
+                           &other_tri,&num_other);
+
+  glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+  for (i=0;i<num_active;i++)
+  {
+    glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, high_color);
+    glMaterialfv( GL_BACK, GL_AMBIENT_AND_DIFFUSE, bkhi_color);
+    glBegin(GL_TRIANGLES);
+      setTriangle(active_tri[i]); 
+    glEnd();
+  }
+  for (i=0;i<num_other;i++)
+  {
+    glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, fore_color);
+    glMaterialfv( GL_BACK, GL_AMBIENT_AND_DIFFUSE, bkfc_color);
+    glBegin(GL_TRIANGLES);
+      setTriangle(other_tri[i]); 
+    glEnd();
+  }
+}
+
+/* Hidden wireframe (draw edges on filled triangles with a changed z
+   range, fast bu result is not always correct). */
+void drawHidden_zbuffer(void)
+{
+  int i;
+  MT_INDEX * active_tri;
+  MT_INDEX * other_tri;
+  MT_INDEX num_active;
+  MT_INDEX num_other;
+
+  ex->MT_AllExtractedTiles(&active_tri,&num_active,
+                           &other_tri,&num_other);
+
+  /* draw filled faces in background color with changed depth range */
+  glDepthFunc(GL_LEQUAL);
+  glDepthRange(ZTWIST,1.0f);
+  glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
+  glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, back_color);
+  glColor3fv(back_color);
+  glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 
+  glBegin(GL_TRIANGLES);
+  for (i=0;i<num_active;i++)
+  {
+    setTriangle(active_tri[i]);
+  }
+  for (i=0;i<num_other;i++)
+  {
+    setTriangle(other_tri[i]);
+  }
+  glEnd();
+
+  /* draw edges in foreground color with changed depth range */
+  glDepthRange(0.0f,1.0f-ZTWIST); 
+  glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+  glDepthFunc(GL_LEQUAL);
+  glLineWidth(1.0);
+  glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, high_color);
+  glMaterialfv( GL_BACK, GL_AMBIENT_AND_DIFFUSE, bkhi_color);
+  glColor3fv(high_color);
+  glPolygonMode(GL_FRONT_AND_BACK,GL_LINE); 
+  glBegin(GL_TRIANGLES);
+  for (i=0;i<num_active;i++)
+  {
+      setTriangle(active_tri[i]);
+  }
+  glEnd();
+/***
+  glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, fore_color);
+  glMaterialfv( GL_BACK, GL_AMBIENT_AND_DIFFUSE, bkfc_color);
+***/
+  glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, fore_color);
+  glColor3fv(fore_color);
+  glBegin(GL_TRIANGLES);
+  for (i=0;i<num_other;i++)
+  {
+      setTriangle(other_tri[i]);
+  }
+  glEnd();
+  
+  /* restore default state */
+  glDepthRange(0.0f,1.0f);
+  glDepthFunc(GL_LESS);
+}
+
+/* Hidden wireframe (draw back faces in background color, front faces as 
+   edges, only good for closed surfaces seen from outside). */
+void drawHidden_black(void)
+{
+  int i;
+  MT_INDEX * active_tri;
+  MT_INDEX * other_tri;
+  MT_INDEX num_active;
+  MT_INDEX num_other;
+  
+  ex->MT_AllExtractedTiles(&active_tri,&num_active,
+                           &other_tri,&num_other);
+  glLineWidth(1.0);
+  glEnable(GL_LIGHTING);
+  glPolygonMode(GL_FRONT,GL_LINE);
+  glPolygonMode(GL_BACK,GL_FILL);
+  glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, high_color);
+  glMaterialfv( GL_BACK, GL_AMBIENT_AND_DIFFUSE, back_color);
+  for (i=0;i<num_active;i++)
+  {
+    glBegin(GL_TRIANGLES);
+      setTriangle(active_tri[i]); 
+    glEnd();
+  }
+  glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, fore_color);
+  for (i=0;i<num_other;i++)
+  {
+    glBegin(GL_TRIANGLES);
+      setTriangle(other_tri[i]); 
+    glEnd();
+  }
+  
+}
+
+/* Hidden wireframe (use stencil functions, correct but slow). */
+void drawHidden_stencil(void)
+{
+  int i;
+  MT_INDEX * active_tri;
+  MT_INDEX * other_tri;
+  MT_INDEX num_active;
+  MT_INDEX num_other;
+  
+  ex->MT_AllExtractedTiles(&active_tri,&num_active,
+                           &other_tri,&num_other);
+  glLineWidth(1.0);
+  for (i=0;i<num_active;i++)
+  {
+    glStencilFunc(GL_ALWAYS,0,1);
+    glStencilOp(GL_INVERT,GL_INVERT,GL_INVERT);
+    glColor3fv(high_color); /* border color */
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    glBegin(GL_TRIANGLES);
+      setTriangle(active_tri[i]); 
+    glEnd();
+    glColor3fv(high_fillcolor); /* interior color */
+    glStencilFunc(GL_EQUAL,0,1);
+    glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+    glBegin(GL_TRIANGLES);
+      setTriangle(active_tri[i]);
+    glEnd();
+    glColor3fv(high_color); /* border color */
+    glStencilFunc(GL_ALWAYS,0,1);
+    glStencilOp(GL_INVERT,GL_INVERT,GL_INVERT);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    glBegin(GL_TRIANGLES);
+      setTriangle(active_tri[i]);
+    glEnd();
+  }
+
+  for (i=0;i<num_other;i++)
+  {
+    glStencilFunc(GL_ALWAYS,0,1);
+    glStencilOp(GL_INVERT,GL_INVERT,GL_INVERT);
+    glColor3fv(fore_color); /* border color */
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    glBegin(GL_TRIANGLES);
+      setTriangle(other_tri[i]); 
+    glEnd();
+    glColor3fv(fore_fillcolor); /* interior color */
+    glStencilFunc(GL_EQUAL,0,1);
+    glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+    glBegin(GL_TRIANGLES);
+      setTriangle(other_tri[i]);
+    glEnd();
+    glColor3fv(fore_color); /* border color */
+    glStencilFunc(GL_ALWAYS,0,1);
+    glStencilOp(GL_INVERT,GL_INVERT,GL_INVERT);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+    glBegin(GL_TRIANGLES);
+      setTriangle(other_tri[i]);
+    glEnd();
+  }
+}
+
+/* Compute direction of movement based on current view rotation angles.
+   Only one of x,y,z must be +1 or -1, the others must be 0. */
+void computeMovingDir(int x, int y, int z)
+{
+  if (x || y || z)
+  {
+    move_vec[0] = (float)x * diagonal / (mt->MT_MaxX() - mt->MT_MinX());
+    move_vec[1] = (float)y * diagonal / (mt->MT_MaxY() - mt->MT_MinY());
+    move_vec[2] = (float)z * diagonal / (mt->MT_MaxZ() - mt->MT_MinZ());
+  }
+}
+
+/* ----------------------------------------------------------------------- */
+/*                          CALLBACK FUNCTIONS                             */
+/* ----------------------------------------------------------------------- */
+
+void displayCallBack(void)
+{
+  glEnable(GL_LIGHTING);
+  glEnable(GL_DEPTH_TEST);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  trasfScene();
+  setLight();
+  switch (style)
+  {
+    case HIDDEN_WIRE:
+      drawHidden();
+      break;
+    case SOLID_FACES:
+      drawSolid();
+      break;
+  }
+  glDisable(GL_LIGHTING);
+  drawFocus();
+  drawAxis();
+  glFlush();
+  glutSwapBuffers();
+}
+
+void displayString(float x, float y, char * s)
+{
+  int i;
+  glRasterPos2f(x,y);
+  for (i=0; s[i]!='\0'; i++)
+  {
+    glutBitmapCharacter(GLUT_BITMAP_8_BY_13, s[i]);
+  }
+}
+
+void dialogCallBack(void)
+{
+  char aux[255];
+
+  glDisable(GL_LIGHTING);
+  glDisable(GL_DEPTH_TEST);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluOrtho2D(0,window_w[1],0,window_h[1]);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glColor3fv(text_color);
+  displayString( 0.0,374.0,"*** BOX DEMO ***");
+  displayString( 0.0,357.0,"q: Quit");
+  displayString( 0.0,340.0,"s: Save mesh (.OFF)");
+  sprintf(aux,"TRIANGLES: %d, active %d",
+              ex->MT_AllExtractedTilesNum(),
+              ex->MT_ExtractedTilesNum());
+  displayString( 0.0,323.0,aux);
+  switch ( getExtractor() )
+  {  case DYNAMIC_EXTR: sprintf(aux,"EXTRACTOR: dynamic"); break;
+     case LOCAL_EXTR: sprintf(aux,"EXTRACTOR: local"); break;
+     case STATIC_EXTR: sprintf(aux,"EXTRACTOR: static"); break;
+  }
+  displayString( 3.0,308.0,aux);
+  displayString(10.0,293.0,"E: change extractor");
+  sprintf(aux,"AREA FACTOR: %f",getAreaBound());
+  displayString( 3.0,278.0,aux);
+  displayString(10.0,263.0,">/<: increase/decrease");
+  displayString( 3.0,248.0,"BOX SIZE");
+  displayString(10.0,233.0,"+/-: enlarge/shrink");
+  if (arrow_use==TO_ROTATE)  sprintf(aux,"ARROWS: rotate");
+  else  sprintf(aux,"ARROWS: translate");
+  displayString( 3.0,218.0,aux);
+  if (arrow_use==TO_ROTATE)  sprintf(aux,"up/down: wrt window horizon");
+  else  sprintf(aux,"up/down: up/down");
+  displayString(10.0,203.0,aux);
+  if (arrow_use==TO_ROTATE)  sprintf(aux,"right/left: wrt green axis");
+  else  sprintf(aux,"right/left: right/left");
+  displayString(10.0,188.0,aux);
+  displayString(10.0,173.0,"F1: switch rotate/translate");
+  displayString( 3.0,158.0,"VIEW");
+  displayString(10.0,143.0,"F: solid faces");
+  displayString(10.0,128.0,"W: wire frame");
+  displayString(10.0,113.0,"I/O: zoom in/out");
+  if (is_idle)  sprintf(aux,"MOTION: on");
+  else  sprintf(aux,"MOTION: off");
+  displayString( 3.0, 98.0,aux);
+  displayString(10.0, 83.0,"r/R: red axis");
+  displayString(10.0, 68.0,"g/G: green axis");
+  displayString(10.0, 53.0,"b/B: blue axis");
+  displayString(10.0, 38.0,"home/end: restore/stop");
+  sprintf(aux,"SPEED: %f",speed);
+  displayString( 3.0, 23.0,aux);  
+  displayString(10.0,  8.0,"PgUp/PgDn: increase/decrease");
+  glutSwapBuffers();
+}
+
+void idleCallBack()
+{
+  if (is_idle)
+     advanceGame(speed*move_vec[0],speed*move_vec[1],speed*move_vec[2]);
+  else if (need_new_mesh) 
+          advanceGame(0.0,0.0,0.0);
+  redrawWindows();
+}
+
+void reshapeCallBack(int w, int h)
+{
+    int d, i;
+    int curr_win = glutGetWindow();
+    if (curr_win == window[0])
+    {  d = ( (w>h) ? h : w );
+       glViewport(0, 0, d, d);
+       i = 0;
+    }
+    else 
+    {  i = 1;
+       glViewport(0, 0, w, h);
+    }
+    window_w[i] = w;
+    window_h[i] = h;
+}
+void saveMesh()
+{
+  char nomefile[30];
+  FILE *fout;
+  sprintf(nomefile, "%s%03d.off", nome, numMesh);
+  fout  = fopen(nomefile, "w");
+  MT_WriteAllIndexed(fout, ex, MT_NO_FLAGS);
+  fclose(fout);
+}
+
+void keyboardCallBack(unsigned char c, int x, int y)
+{
+  need_new_mesh = 0;
+  switch (c)
+  {
+    case 'i': case 'I': 
+      zoom_factor += 0.1;
+      break;
+    case 'o': case 'O':
+      zoom_factor -= 0.1;
+      break;
+    case '+':
+      scaleBox(+1);
+      if (!is_idle) need_new_mesh = 1;
+      break;
+    case '-':
+      scaleBox(-1);
+      if (!is_idle)  need_new_mesh = 1;
+      break;
+    case '>': 
+      changeAreaBound(1.4*getAreaBound());
+      if (!is_idle) need_new_mesh = 1;
+      break;
+    case '<': 
+      changeAreaBound(getAreaBound()*0.7);
+      if (!is_idle) need_new_mesh = 1;
+      break;
+    case 'w': case 'W':
+      style = HIDDEN_WIRE;
+      break;
+    case 'f': case 'F':
+      style = SOLID_FACES;
+      break;
+    case 'e': case 'E':
+      changeExtractor();
+      break;
+    case 'r':
+      computeMovingDir(-1,0,0);
+      glutIdleFunc(idleCallBack); is_idle = 1;
+      break;
+    case 'R':
+      computeMovingDir(+1,0,0);
+      glutIdleFunc(idleCallBack); is_idle = 1;
+      break;
+    case 'g':
+      computeMovingDir(0,-1,0);
+      glutIdleFunc(idleCallBack); is_idle = 1;
+      break;
+    case 'G':
+      computeMovingDir(0,+1,0);
+      glutIdleFunc(idleCallBack); is_idle = 1;
+      break;
+    case 'b':
+      computeMovingDir(0,0,-1);
+      glutIdleFunc(idleCallBack); is_idle = 1;
+      break;
+    case 'B':
+      computeMovingDir(0,0,+1);
+      glutIdleFunc(idleCallBack); is_idle = 1;
+      break;
+    case 'q': case 'Q':
+      endGame();
+    case 's': case 'S':
+      saveMesh();
+      numMesh++;
+  }
+  idleCallBack();
+}
+
+void specialCallBack(int c, int x, int y)
+{
+  need_new_mesh = 0;
+  switch (c)
+  {
+    case 100: /* left arrow */
+      if (arrow_use==TO_ROTATE)
+      {  y_angle -= ANGLE_STEP; 
+         if (y_angle<-180.0) y_angle += 360.0;
+      }
+      else /* TO_TRANSLATE */
+         x_move -= MOVE_STEP;
+      break;
+    case 101: /* up arrow */
+      if (arrow_use==TO_ROTATE)
+      {  x_angle -= ANGLE_STEP; 
+         if (x_angle<-180.0) x_angle += 360.0;
+      }
+      else /* TO_TRANSLATE */
+         y_move += MOVE_STEP;
+      break;
+    case 102: /* right arrow */
+      if (arrow_use==TO_ROTATE)
+      {  y_angle += ANGLE_STEP; 
+         if (y_angle>180.0) y_angle -= 360.0;
+      }
+      else /* TO_TRANSLATE */
+         x_move += MOVE_STEP;
+      break;
+    case 103: /* down arrow */
+      if (arrow_use==TO_ROTATE)
+      {  x_angle += ANGLE_STEP; 
+         if (x_angle>180.0) x_angle -= 360.0;
+      }
+      else /* TO_TRANSLATE */
+         y_move -= MOVE_STEP;
+      break;
+    case 104: /* page up */
+      speed += 0.1;
+      break;
+    case 105: /* page down */
+      if (speed>0.0) speed -= 0.1;
+      break;
+    case 106: /* home */
+      restoreGame();
+      need_new_mesh = 0;
+      glutIdleFunc(NULL); is_idle = 0;
+      break;
+    case 107: /* end */
+      glutIdleFunc(NULL); is_idle = 0;
+      break;
+    case 1: /* F1 */
+      arrow_use = ((arrow_use==TO_ROTATE) ? TO_TRANSLATE : TO_ROTATE);
+      break;
+  }
+  idleCallBack();
+}
+
+
+/* ----------------------------------------------------------------------- */
+
+void sceneLimits(void)
+{
+  float Xrange, Yrange, Zrange;
+  Zrange = mt->MT_MaxZ() - mt->MT_MinZ();
+  Xrange = mt->MT_MaxX() - mt->MT_MinX();
+  Yrange = mt->MT_MaxY() - mt->MT_MinY();
+  diagonal = sqrt(Zrange*Zrange + Xrange*Xrange + Yrange*Yrange);
+}
+
+/* ----------------------------------------------------------------------- */
+/*                                 MAIN                                    */
+/* ----------------------------------------------------------------------- */
+
+int main(int argc, char **argv)
+{
+ if (argc < 2)
+ {
+  fprintf(stderr,"USAGE: %s filename\n",argv[0]);
+  fprintf(stderr,"For example: %s ../data_demo1/bunny\n",argv[0]);
+  return 10;
+ }
+  strncpy(nome, argv[1], 50);
+  glutInit(&argc, argv);
+  startGame(argc, argv);
+  sceneLimits();
+  
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+  glutInitWindowSize((int)window_w[0], (int)window_h[0]);
+  window[0] = glutCreateWindow("VIEW");
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+  glutInitWindowSize((int)window_w[1], (int)window_h[1]);
+  window[1] = glutCreateWindow("DIALOG");
+
+  /* enable OpenGL properties, and Glut callbacks, for graphic window */
+  glutSetWindow(window[0]);
+  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+  glEnable(GL_LIGHT1);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_NORMALIZE);
+  glutDisplayFunc(displayCallBack);
+  glutKeyboardFunc(keyboardCallBack);
+  glutSpecialFunc(specialCallBack);
+  glutReshapeFunc(reshapeCallBack);
+  
+  /* enable OpenGL properties, and Glut callbacks, for dialog window */
+  glutSetWindow(window[1]);
+  glClearColor(page_color[0],page_color[1],page_color[2],1.0);
+  glutDisplayFunc(dialogCallBack);
+  glutKeyboardFunc(keyboardCallBack);
+  glutSpecialFunc(specialCallBack);
+  glutReshapeFunc(reshapeCallBack);
+  
+  glutMainLoop();
+}
+
+/* ----------------------------------------------------------------------- */

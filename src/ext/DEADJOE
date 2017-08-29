@@ -1,0 +1,213 @@
+
+*** Modified files in JOE when it aborted on Fri Sep  7 19:48:14 2007
+*** JOE was aborted by signal 1
+
+*** File '(Unnamed)'
+int HeightSegment (MT_MultiTesselation m, WithFieldClass * mf,
+                   MT_INDEX t, float val,
+                   float *x1, float *y1, float *x2, float *y2)
+{
+  MT_INDEX * v;
+  float x[3], y[3];
+  int i, j;
+  float p;
+  
+  m->MT_TileVertices(t, &v);
+  j = 0;
+  /* check is some vertex has the given field value */
+  for (i=0;i<3;i++)
+  {  
+    if ( mf->VertexField(v[i]) == val )
+    {  
+       x[j] = m->MT_VertexX(v[i]);
+       y[j] = m->MT_VertexY(v[i]);  
+       j++;
+    }
+  }      
+  /* find the edges that intersect field value val */
+  for (i=0;i<3;i++)
+  {
+    if ( ( (mf->VertexField(v[i])<val) && (mf->VertexField(v[(i+1)%3])>val) ) 
+       ||
+       ( (mf->VertexField(v[i])>val) && (mf->VertexField(v[(i+1)%3])<val) ) )
+    {
+      /* edge intersects value val, find in which point using the 
+         parametric equation of the edge */
+      p = ( val - mf->VertexField(v[i]) ) /
+          ( mf->VertexField(v[(i+1)%3]) - mf->VertexField(v[i]) );
+      x[j] = m->MT_VertexX(v[i]) * (1-p) + m->MT_VertexX(v[(i+1)%3]) * p;
+      y[j] = m->MT_VertexY(v[i]) * (1-p) + m->MT_VertexY(v[(i+1)%3]) * p;
+      j++;  
+    }
+  }
+  switch (j)
+  { 
+    case 0: 
+      /* no intersections */
+      return 0;
+    case 1: 
+      /* interesection is just one point */
+      return 0;
+    case 2:
+      /* two intersection points, return segment joining them */
+      (*x1) = x[0]; (*y1) = y[0];
+      (*x2) = x[1]; (*y2) = y[1];
+      return 1;
+    default:
+      /* this can only happen if the triangle is flat and lies at the
+         given height */
+      MT_Warning("Three intersection points","HeightSegment");
+      return 0;
+  }
+}
+
+*** File '~/aa'
+float View2FocusOnTrianglesClass :: VertexHeight(MT_MultiTesselation m)
+{  
+   if (m->MT_VertexDim()<3)
+   {
+     MT_Error("Must be in 3D space",
+              "View2FocusOnTrianglesClass::VertexHeight");
+     return (0.0);
+   }
+   if (the_triangle != MT_NULL_INDEX)
+   {
+     MT_INDEX * v;  /* triangle vertices */
+     float a,b,c;   /* triangle normal */
+     m->MT_TileVertices(the_triangle, &v);
+/*
+     if (PointOutTriangle2D(v_coord[0], v_coord[1],
+                            m->MT_VertexX(v[0]),m->MT_VertexY(v[0]), 
+                            m->MT_VertexX(v[1]),m->MT_VertexY(v[1]),
+                            m->MT_VertexX(v[2]),m->MT_VertexY(v[2])) )
+     {
+       MT_Error("Invalid triangle",
+                "View2FocusOnTrianglesClass::VertexHeight");
+        return (0.0);
+     }
+*/
+     TriangleNormal(
+        m->MT_VertexX(v[0]),m->MT_VertexY(v[0]),m->MT_VertexZ(v[0]),
+        m->MT_VertexX(v[1]),m->MT_VertexY(v[1]),m->MT_VertexZ(v[1]),
+        m->MT_VertexX(v[2]),m->MT_VertexY(v[2]),m->MT_VertexZ(v[2]),
+        &a, &b, &c);
+     return ( m->MT_VertexZ(v[0]) +
+              (-1.0/c) * ( a*(v_coord[0]-m->MT_VertexX(v[0])) +
+                           b*(v_coord[1]-m->MT_VertexY(v[0])) ) );
+   }
+   MT_Error("No triangle","View2FocusOnTrianglesClass::VertexHeight");
+   return (0.0); 
+}
+
+*** File '(Unnamed)'
+~/aa
+
+*** File '(Unnamed)'
+Heig
+
+*** Modified files in JOE when it aborted on Fri Sep  7 19:51:48 2007
+*** JOE was aborted by signal 1
+
+*** File '(Unnamed)'
+int HeightSegment (MT_MultiTesselation m, WithFieldClass * mf,
+                   MT_INDEX t, float val,
+                   float *x1, float *y1, float *x2, float *y2)
+{
+  MT_INDEX * v;
+  float x[3], y[3];
+  int i, j;
+  float p;
+  
+  m->MT_TileVertices(t, &v);
+  j = 0;
+  /* check is some vertex has the given field value */
+  for (i=0;i<3;i++)
+  {  
+    if ( mf->VertexField(v[i]) == val )
+    {  
+       x[j] = m->MT_VertexX(v[i]);
+       y[j] = m->MT_VertexY(v[i]);  
+       j++;
+    }
+  }      
+  /* find the edges that intersect field value val */
+  for (i=0;i<3;i++)
+  {
+    if ( ( (mf->VertexField(v[i])<val) && (mf->VertexField(v[(i+1)%3])>val) ) 
+       ||
+       ( (mf->VertexField(v[i])>val) && (mf->VertexField(v[(i+1)%3])<val) ) )
+    {
+      /* edge intersects value val, find in which point using the 
+         parametric equation of the edge */
+      p = ( val - mf->VertexField(v[i]) ) /
+          ( mf->VertexField(v[(i+1)%3]) - mf->VertexField(v[i]) );
+      x[j] = m->MT_VertexX(v[i]) * (1-p) + m->MT_VertexX(v[(i+1)%3]) * p;
+      y[j] = m->MT_VertexY(v[i]) * (1-p) + m->MT_VertexY(v[(i+1)%3]) * p;
+      j++;  
+    }
+  }
+  switch (j)
+  { 
+    case 0: 
+      /* no intersections */
+      return 0;
+    case 1: 
+      /* interesection is just one point */
+      return 0;
+    case 2:
+      /* two intersection points, return segment joining them */
+      (*x1) = x[0]; (*y1) = y[0];
+      (*x2) = x[1]; (*y2) = y[1];
+      return 1;
+    default:
+      /* this can only happen if the triangle is flat and lies at the
+         given height */
+      MT_Warning("Three intersection points","HeightSegment");
+      return 0;
+  }
+}
+
+*** File '~/aa'
+float View2FocusOnTrianglesClass :: VertexHeight(MT_MultiTesselation m)
+{  
+   if (m->MT_VertexDim()<3)
+   {
+     MT_Error("Must be in 3D space",
+              "View2FocusOnTrianglesClass::VertexHeight");
+     return (0.0);
+   }
+   if (the_triangle != MT_NULL_INDEX)
+   {
+     MT_INDEX * v;  /* triangle vertices */
+     float a,b,c;   /* triangle normal */
+     m->MT_TileVertices(the_triangle, &v);
+/*
+     if (PointOutTriangle2D(v_coord[0], v_coord[1],
+                            m->MT_VertexX(v[0]),m->MT_VertexY(v[0]), 
+                            m->MT_VertexX(v[1]),m->MT_VertexY(v[1]),
+                            m->MT_VertexX(v[2]),m->MT_VertexY(v[2])) )
+     {
+       MT_Error("Invalid triangle",
+                "View2FocusOnTrianglesClass::VertexHeight");
+        return (0.0);
+     }
+*/
+     TriangleNormal(
+        m->MT_VertexX(v[0]),m->MT_VertexY(v[0]),m->MT_VertexZ(v[0]),
+        m->MT_VertexX(v[1]),m->MT_VertexY(v[1]),m->MT_VertexZ(v[1]),
+        m->MT_VertexX(v[2]),m->MT_VertexY(v[2]),m->MT_VertexZ(v[2]),
+        &a, &b, &c);
+     return ( m->MT_VertexZ(v[0]) +
+              (-1.0/c) * ( a*(v_coord[0]-m->MT_VertexX(v[0])) +
+                           b*(v_coord[1]-m->MT_VertexY(v[0])) ) );
+   }
+   MT_Error("No triangle","View2FocusOnTrianglesClass::VertexHeight");
+   return (0.0); 
+}
+
+*** File '(Unnamed)'
+~/aa
+
+*** File '(Unnamed)'
+Vertex
+He

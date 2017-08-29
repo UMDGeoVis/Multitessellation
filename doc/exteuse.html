@@ -1,0 +1,104 @@
+<HTML>
+
+<TITLE>The MT Package - How to use an MT with features</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (9) --><H2>HOW TO USE AN MT WITH A CERTAIN SET OF FEATURES</H2>
+
+An MT is used for extracting tesselations at variable resolution from it.
+We have already provided <A HREF="coreuse.html">general guidelines</A> for
+the extraction of tesselations from an MT.
+Now, we provide more details about the setting of extraction conditions.
+Typically, in an MT with features, extraction conditions refer to 
+such features.
+(you can find <A HREF="extecnd.html">here</A> guidelines for the definition 
+of feature-based conditions) .
+<P>
+
+<!-- (9.1) --><H3>Guidelines</H3>
+
+We assume that our MT has feature <TT>YYY</TT>, i.e., it belongs to a subclass
+<TT>MyClass</TT> of <TT>WithYYYClass</TT> and of
+<TT>MT_MultiTesselationClass</TT>.
+<BR>
+See also the <A HREF="extedef.html">guidelines</A> for defining MTs 
+with specific features.
+<P>
+
+Our resolution filter and focus condition belong to a subclass
+<TT>MyFilterClass</TT> and <TT>MyFocusClass</TT>, respectively, of
+<TT>MT_CondClass</TT> that uses feature <TT>YYY</TT>. 
+Therefore, the constructors of class <TT>MyFilterClass</TT> and
+<TT>MT_CondClass</TT> have an argument of class <TT>WithYYYClass</TT>.
+<BR>
+See also the <A HREF="extecnd.html">guidelines</A> for the definition 
+of feature-based conditions.
+<P>
+
+With respect to the <A HREF="coreuse.html">template</A> 
+already given for extraction of tesselation
+from a plane MT, now we simply have to create the resolution filter and
+the focus condition by passing the MT to the constructors of classes
+<TT>MyFilterClass</TT> and <TT>MyFocusClass</TT>, respectively.
+
+<!-- (9.2) --><H3>An example</H3>
+
+In this example, the feature is the tile error.
+We use an MT of class 
+<TT><A HREF="exten.html#FIELDMT">FieldWithErrorClass</A></TT> (subclass of
+<TT>WithTileErrorClass</TT>), a resolution filter of class 
+<TT><A HREF="exten.html#ERRFLT">TileErrFilter</A></TT>
+and a focus condition of class 
+<TT><A HREF="exten.html#BOX3TRI">Box3FocusOnTrianglesClass</A></TT>.
+
+<PRE>
+#include "mt_extra.h"
+#include "t_misc..h"  /* for class TileErrFilterClass */
+#include "f_box.h"    /* for class Box3FocusOnTrianglesClass */
+
+....
+
+FieldWithError mt;          /* the MT to be used */
+MT_StaticExtractor ex       /* the extractor */
+TileErrFilter flt;          /* the resolution filter condition */
+Box3FocusOnTriangles fcs;   /* the focus condition */
+
+/* create mt as a 2-dimensional field in 3D */
+mt = new FieldWithErrorClass(3,2);
+
+/* read the MT and its tile errors */
+mt->MT_Read(... a file ...);
+mt->ReadTileErrors(... another file ...);
+
+/* create the resolution filter and the focus condition */
+flt = new TileErrFilterClass(mt,... some threshold ...);
+fcs = new Box3FocusOnTrianglesClass(mt, ... box parameters ...);
+
+/* create the extractor */
+ex = new MT_StaticExtractorClass(mt);
+
+/* associate the conditions with the extractor */
+ex->MT_SetFilter(flt);
+ex->MT_SetFocus(fcs);
+
+/* main loop */
+while (... we want to continue ...)
+{
+   /* extract a tesselation */
+   ex->MT_ExtractTesselation();
+
+   /* do something with the extracted tesselation */
+   ...
+
+   /* prepare for next extraction, if desired */
+   ...
+}
+
+<!-------------------------------------------------------------------------->
+
+</BODY>
+
+</HTML>

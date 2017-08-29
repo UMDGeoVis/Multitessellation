@@ -1,0 +1,124 @@
+<HTML>  
+
+<TITLE>The MT (Multi-Tesselation) Package - Terrain Demo</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<H1>Terrain demo</H1>
+
+This demo flies over a terrain.
+
+<H3>How to run the demo</H3>
+
+The demo is available ad <B>demo2</B>.
+<BR>
+
+This demo requires a two-dimensional MT embedded in three dimensions,
+representing a scalar field (no two different z values for the same
+(x,y) pair),
+with approximation errors associated with its tiles.
+<P>
+
+Let the MT be contained in a file named <TT>xxx.mtf</TT>,
+tile errors be contained in file <TT>xxx.err</TT>.
+To run the demo, type:
+<UL> <TT>demo2 xxx</TT> </UL>
+
+For instance, try <TT>demo2 ../data_demo2/marcy128</TT>.
+<P>
+
+To exit the demo, strike key "Q" or "q" when the focus is in one 
+of the demo windows.
+
+<H3>Inside the demo</H3>
+
+The program extracts a triangle mesh that, inside the view frustum, 
+has an approximation errror decreasing with the distance from the 
+viewpoint; outside the view frustum, the mesh is arbitrarily coarse.
+The extraction parameters are:
+<UL>
+<LI> a focus condition s.t. active triangles are the ones intersecting a
+     a wedge
+<LI> a resolution filter condition s.t. a triangle is feasible if its error
+  is below a threshold. The threshold has its minimum at the vertex of the
+  wedge increases while moving away.
+</UL>
+
+The user can control the movement of the viewpoint, and change the
+extraction parameters.
+<P>
+
+Two windows are used for visualization:
+<UL>
+<LI>
+  <B>Overview window</B>:
+  it provides a top-view of the whole terrain showing the wedge
+  corresponding to the current view frustum.
+  Green triangles are active, grey triangles are not active.
+<LI>
+  <B>Eye window</B>:
+  it shows the terrain as viewed by an observer having the
+  wedge as its view frustum.
+</UL>
+
+A third window shows the available commmands for interacting with the
+program.
+<P>
+
+<IMG ALIGN=MIDDLE SRC="GIF/d2over.gif" HEIGHT=250 WIDTH=240>
+<IMG ALIGN=MIDDLE SRC="GIF/d2eye.gif" HEIGHT=250 WIDTH=240>
+<IMG ALIGN=MIDDLE SRC="GIF/d2log.gif" HEIGHT=250 WIDTH=150>
+
+
+<H3>User interaction</H3>
+
+User interaction is done by pressing the following keys when the
+mouse focus is in one of the three windows of the program.
+
+<H4>Viewpoint movement</H4>
+<UL>
+<LI> left arrow / right arrow: turn left / right
+<LI> up arrow / down arrow: start moving forward / backward
+<LI> end: stop moving 
+</UL>
+The directions of turns are referred to the current view direction.
+
+<H4>Triangle mesh extraction</H4>
+<UL>
+<LI> e / E: switch extractor type (dynamic / local)
+<LI> > / <: increase / decrease error threshold used inside the wedge
+<LI> + / -: enlarge / shrink the viewing angle
+</UL>
+
+<H4>Drawing</H4>
+<UL>
+<LI> w / W: switch to wireframe style (hidden line)
+<LI> f / F: switch to solid style, flat shading
+<LI> s / S: switch to solid style, smooth shading (smooth shading is only
+     used for active triangles, vertex nornals are computed on-line on
+     the current triangulation)
+<LI> i / o: zoom in / out
+</UL>
+Zooming only applies to the overview window.
+
+<H4>Termination</H4>     
+<UL>                     
+<LI> q / Q: quit         
+</UL>
+
+<H3>Remarks</H3>
+
+To avoid collision, the height of the viewpoint is dynamically changed based
+on the max height of the terrain in the current frame. For some pairs of
+frames, the max height changes suddently, thus causing the viewpoint to jump
+up or down.
+<P>
+
+Visualization in hidden wireframe in the eye window is slow because it
+makes use of stencil functions.
+
+</BODY>
+
+</HTML>

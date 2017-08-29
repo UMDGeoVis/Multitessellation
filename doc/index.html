@@ -1,0 +1,232 @@
+<HTML>
+
+<HEAD>
+
+<TITLE>The MT (Multi-Tesselation) Package</TITLE>
+
+<META NAME="description" CONTENT="The MT (Multi-Tesselation) Package -
+A dimension-independent package for the representation and manipulation of 
+spatial objects as simplicial complexes at multiple resolutions.">
+
+<META NAME="keywords" CONTENT="multiresolution geometric modeling, 
+level of detail, selective refinement, software library">
+
+<META NAME="Author" CONTENT="Paola Magillo - DIBRIS, University of Genova,
+Italy">
+
+</HEAD>
+
+<BODY>
+
+<A NAME="top"></A>
+
+<CENTER>
+<H1>THE MT (MULTI-TESSELATION) PACKAGE</H1>
+<H3>
+<A HREF="http://www.dibris.unige.it/person/DeflorianiL">Leila De Floriani</A>, 
+<A HREF="http://www.dibris.unige.it/person/MagilloP">Paola Magillo</A>, 
+<A HREF="http://www.dibris.unige.it/person/PuppoE">Enrico Puppo</A>
+</H3>
+<BR>
+A dimension-independent package for the representation and manipulation of 
+spatial objects as simplicial complexes at multiple resolutions.
+</CENTER>
+
+<BR><BR>
+
+<HR>
+
+<H2>Table of Contents</H2>
+
+<UL>
+<LI> <A HREF="#WHATIS">What is the MT Package?</A>
+<LI> <A HREF="#DOCUMENT">Documentation</A>
+</UL>
+
+<HR>
+
+<A NAME="WHATIS"></A><H2>What is the MT Package?</H2>
+
+<P>
+The MT Package contains a C++ library that allows you to design
+interactive applications which exploit the full power of multiresolution
+on geometric objects represented by meshes in any dimension.
+
+<P>
+There are two basic actions in multoresolution modelling:
+<UL>
+<LI> Take a simplicial (e.g., triangular, tetrahedral) mesh describing
+     an object and  build a multiresolution representation of the same
+     object;
+<LI> Query this multiresolution representation on-line to obtain meshes
+     representing the object at the level of detail you like.
+</UL>
+
+The MT package provides libraries to support both actions. Based on 
+the MT libraries, you can write a program to build a multiresolution
+representation, as well as a program to query a multiresolution
+representation.
+
+<P>
+Some demo programs to query a multiresolution representation are
+provided togther with the MT libraries, while programs to build a 
+multiresolution representation are distributed separately.
+
+<P>
+The MT Package is fully parametric on:
+<UL>
+<LI> The dimension of the mesh (e.g., a surface made of triangles,
+     a volume made of tetrahedra, and any higher dimensional complex 
+     made of simplexes);
+<LI> The dimension on the embedding space (i.e., the number of
+     coordinates on the vertices of the mesh);
+<LI> Any attribute that you wish to store at the vertices and at the
+     cells of your mesh;
+<LI> Any criterion that you wish to adopt in order to extract meshes at
+     variable resolution from the multiresolution model.
+</UL>
+Thus you can manage multiresolution the way you like, depending
+on the needs of your application. You just have to specify the attributes
+you wish to include and the condition to test the resolution.
+
+<P>
+The MT Package allows you to use your own simplification code to build
+the multiresolution model! You just have to include commands
+provided by a class in the library.
+
+<P>
+Some off-the-shelf programs are available,
+which can be either used directly, or adopted as templates to write
+your own applications:
+<UL>
+<LI> Programs to build multiresolution terrain models from either
+     digital elevation grids or triangulated irregular networks
+     (distributed separately, not included in the MT package!);
+<LI> Programs to build multiresolution surface models from generic
+     triangle meshes (distributed separately, not included in the MT
+     package!);
+<LI> A program to fly over a terrain, which gives you the possibility to
+     adjust view and resolution parameters (distributed within the MT
+     package, as demos);
+<LI> A program to analyze an object by interactively using a magic lens
+     that keeps high resolution inside a volume, while the rest of the 
+     object is shown at low resolution
+     (distributed within the MT package, as demos).
+</UL>
+
+See a more detailed <A HREF="quick.html">quick
+guide</A>
+to discover the possibilities you have in using the MT Package.
+<P><P>
+
+<HR>
+
+<A NAME="DOCUMENT"></A><H2>Documentation</H2>
+
+<UL>
+
+<H3>General Information</H3>
+
+<LI><A HREF="keywords.html">Keywords</A>:
+    quick reference to terms used throughout the package
+<LI><A HREF="mtinfo.html">The MT (Multi-Tesselation)</A>:
+    fundamental concepts and properties
+<LI><A HREF="mtlibrary.html">Overview of the MT libraries</A>
+<LI><A HREF="quick.html">Quick guide to the MT package</A>
+
+<H3>User manual</H3>
+
+<LI><A HREF="corebld.html">How to build a generic MT</A>
+<LI><A HREF="coreuse.html">How to use a generic MT</A>
+
+<LI><A HREF="extedef.html">How to define an MT 
+    with application-dependent features</A>
+<LI><A HREF="extebld.html">How to build an MT
+    with application-dependent features</A>
+<LI><A HREF="extecnd.html">How to define specialized extraction
+    conditions</A>
+<LI><A HREF="exteuse.html">How to use an MT 
+    with application-dependent features</A>
+
+<H3>Reference Manual</H3>  
+
+<LI><A HREF="core.html">Class hierarchy for the kernel of the system</A>:
+    basic classes and predefined attributes
+<LI><A HREF="exten.html">Class hierarchy for the extension of the 
+    system</A>
+<LI><A HREF="files.html">File formats</A>
+
+<A NAME="DEMOS"><H3>Description of demos</H3></A>
+
+<LI> <A HREF="demo1and3.html">Demo on object surfaces</A>
+<LI> <A HREF="demo2.html">Demo on terrains</A>
+
+</UL>
+
+<A NAME="BUILDERS">
+<H2>Some notes about programs that build an MT</H2></A>
+
+<P>
+Programs to build an MT, also called <B>MT constructors</B>,
+are not part of the MT libraries.
+They are independent programs which simply use the MT libraries.
+The common feature of all such programs is an iterative process of
+modification of a tesselation through a sequence of local updates.
+</P>
+
+<P>
+The program iteratively refines or coarsens a tesselation and
+uses a (specialized) building interface in order to build a 
+(specialized) MT.
+
+<BR>
+Any program based on iterative refinement or coarsening 
+can be used to build an MT: it is sufficient that 
+additional instructions from the MT libraries are added to its code
+at some key points.
+
+Each MT constructor will accept data of a certain nature related to a specific
+type of geometric objects, encoded in a certain format, and operates
+on such data through a certain algorithm.
+In addition to the MT, some features may be generated such as approximation
+errors for tiles and other application-dependent information.
+</P>
+
+<P>
+To our knowledge, the following programs to build an MT have been
+developed by now. Of course, you can write your own programs.
+
+<UL>
+
+<!--
+<LI> <A HREF="mtjade.html">MT_Jade</A>: a program for building
+     two-dimensional MTs in three dimensions by means of triangle mesh
+     decimation (iterative deletion of a vertex and retriangulartion of 
+     the hole.
+-->
+
+<LI>
+     <FONT COLOR="AA0055"><B>MT_DELAUNAY</B></FONT>: a program for building
+     MTs for terrains by either progressive insertion of vertices into a raw
+     triangle mesh, or by progressive removal of vertices from a triangle 
+     mesh at full resolution. In both cases, the mesh is a Delaunay
+     triangulation.
+     Input data may be either a set of points, or a triangle mesh.
+     This program has been developed at DISI, University of Genova, Italy.
+
+<LI> A program for building
+     two-dimensional MTs in three dimensions by means of edge collapse
+     in a triangle mesh. This program has been 
+     developed at IMATI-CNR, Genova, Italy.
+
+<LI> A program for building MTs for terrains based on a right-triangle
+     hierarchy. This program is not much interesting in itself, but has
+     been used to compare the MT with other approaches to multiresolution
+     using regular geometry.
+     This program has been developed at DISI, University of Genova, Italy.
+
+</UL>
+
+</BODY>
+
+</HTML>

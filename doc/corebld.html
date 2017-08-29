@@ -1,0 +1,265 @@
+<HTML>
+
+<TITLE>The MT Package - How to build a generic MT</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (4) --><H2>HOW TO BUILD A GENERIC MT</H2>
+
+An MT is built by:
+<OL>
+<LI> Recording the history of a process that iteratively refines or
+     coarsens a tesselation through local updates.
+<LI> Converting such a history into an MT.
+</OL>
+
+The MT building interface (class 
+<TT><A HREF="core.html#BUILDINTERF">MT_BuildingInterfaceClass</A></TT>) 
+provides the functions for doing that.
+
+<!-- (4.1) --><H3>History recording</H3>
+
+The user program must provide a field of type <TT>MT_INDEX</TT> associated with each
+vertex and each tile used in the process of refinement or coarsening.
+Such fields will be used as arguments in the functions of the MT building
+interface.
+The program must not manipulate the <TT>MT_INDEX</TT> fields associated with 
+vertices and tiles in other ways different from initialization and
+their use in the functions of the MT building interface.
+<P>
+
+Here is a list of the operations to be added within a program for
+iterative refinement or coarsening of a <TT>k</TT>-dimensional tesselation
+embedded in <TT>d</TT> dimensions, in order to record its history.
+<P>
+
+<H4> At the beginning</H4>
+
+<OL>
+<LI> Load the initial tesselation and initialize the <TT>MT_INDEX</TT> field of every
+     vertex and tile to <TT>MT_NULL_INDEX</TT>.
+<LI> Call <TT>MT_StartHistory</TT>.
+<LI> For each tile of the initial tesselation:
+     <UL>
+     <LI> for each vertex of such tile, call <TT>MT_UseVertex</TT>
+     <LI> immediately next, call <TT>MT_MakeTile</TT> for this tile
+     </UL>
+<LI> Before starting to refine or coarsen the initial tesselation, call
+     <TT>MT_EndUpdate</TT>.
+</OL>
+
+Operations 1 and 2 may be exchanged.
+
+<H4>At each update operation</H4>
+
+<OL>
+<LI> For each tile removed from the current tesselation, call 
+     <TT>MT_KillTile</TT>.
+<LI> For each new vertex created, initialize its <TT>MT_INDEX</TT> field to
+     <TT>MT_NULL_INDEX</TT>.
+<LI> For each new tile created in the current tesselation:
+     <UL>
+     <LI> for each vertex of such tile, call <TT>MT_UseVertex</TT>
+     <LI> immediately next, call <TT>MT_MakeTile</TT> for this tile
+     </UL>
+<LI> At the end of the update, call <TT>MT_EndUpdate</TT>.
+</OL>
+
+Operations 1,2,3 can be executed in a mixed order, provided that:
+<UL>
+<LI> If a vertex is new, <TT>MT_UseVertex</TT> is called on it after having
+     initialized its <TT>MT_INDEX</TT> field to <TT>MT_NULL_INDEX</TT>.
+<LI> A call to <TT>MT_MakeTile</TT> is preceded by <TT>k</TT>
+     calls to <TT>MT_UseVertex</TT>,
+     one for each of the k vertices of the tile.
+<LI> The calls to <TT>MT_KillTile</TT> and <TT>MT_MakeTile</TT> 
+     within the same update may be interleaved.
+     It is allowed to Make first, and then Kill the same tile within an
+     update (these "temporary tiles" typically occur in algorithms that
+     apply a process of local optimization within the updated area).  The
+     building interface will recognize temporary tiles and remove them from
+     the history.
+</UL>
+
+<H4>At the end</H4>
+
+<OL>
+<LI> For each tile of the final tesselation, call <TT>MT_KillTile</TT>.
+<LI> Then, call <TT>MT_EndUpdate</TT>.
+<LI> Finally, call <TT>MT_EndHistory</TT>.
+</OL>
+
+<!-- (4.2) --><H3>History conversion</H3>
+
+History conversion is the operation that builds an MT from a 
+recorded history.
+<P>
+
+<!--
+Once a history has been recorded, we have two options:
+<OL>
+<LI> building an MT directly
+<LI> writing the history on a file and read such file later 
+     to build an MT
+</OL>
+-->
+
+<!-- 
+In the first case, 
+-->
+
+It is recommended to free all data structures used
+by the refinement or simplification process before building the MT.
+In fact, there may not be enough memory to hold both such structures
+and the MT.
+<P>
+
+Here is a list of operations to be performed in order to convert a
+recorded history into an MT.
+
+<OL>
+<LI> Create an MT and connect it to the building interface
+     by calling function <TT>MT_SetTarget</TT>.
+<LI> Then, call function <TT>MT_Convert</TT>.
+<LI> Now, the MT
+     has been built and it is ready to be used. The building interface is
+     no longer needed and may be deleted.
+</OL>
+
+<!--
+For deferred construction, call function MT_Write of the building interface.
+This saves the history on file.
+In order to build the target MT from such history, call function MT_Read
+of the building interface. Now, the MT
+has been built and it is ready to be used. The building interface is
+no longer needed and may be freed.
+-->
+
+<!-- (4.3) --><H3>An example</H3>
+
+We provide here the template of a program that records a history of an
+iterative process of refinement of a surface mesh and builds a
+two-dimensional MT embedded in 3D.
+<!--
+ by using
+both alternatives (i.e., either directly, or by passing through a
+history file).
+-->
+Recording a process of coarsening is identical, simply the parameter
+passed to function <TT>MT_StartHistory</TT> is <TT>MT_COARSENING</TT> 
+instead of <TT>MT_REFINING</TT>.
+<P>
+
+We assume that, given a vertex <TT>V</TT> of the current tesselation 
+within the user program, the <TT>MT_INDEX</TT> field associated with 
+<TT>V</TT> is named <TT>V.index</TT>;
+and, given a tile <TT>T</TT>, the <TT>MT_INDEX</TT> field associated with 
+<TT>T</TT> is named <TT>T.index</TT>.
+<P>
+
+<PRE>
+#include "mt_build.h"
+
+....
+
+MT_BuildingInterface bi; /* the building interface */
+MT_MultiTesselation mt;  /* the MT to be built */
+
+/* create mt as a 2-dimensional MT (tiles=triangles) in 3D */
+mt = new MT_MultiTesselationClass(3,2); 
+
+/* create the building interface */
+bi = new MT_BuildingInterfaceClass(); 
+
+/* start a history for a 2-dimensional MT in 3D, we assume that
+   our program is based on iterative refinement */
+bi->MT_StartHistory(3,2, MT_REFINING);
+
+/* initialize all MT_INDEX fields of vertices and tiles */
+for (... every vertex V of the initial tesselation ...)
+{  V.index = MT_NULL_INDEX;  }
+for (... every tile T of the initial tesselation ...)
+{  T.index = MT_NULL_INDEX;  }
+
+/* record the update that creates the initial tesselation */
+for (... every tile T of the initial tesselation ...)
+{
+  V1, V2, V3 =  ... the three vertices of T ...
+  V1.index = bi->MT_UseVertex(V1.index, V1.coordinates);
+  V2.index = bi->MT_UseVertex(V2.index, V1.coordinates);
+  V3.index = bi->MT_UseVertex(V3.index, V1.coordinates);
+  T.index = bi->MT_MakeTile();
+}
+bi->MT_EndUpdate();
+
+/* main loop */
+for (... every update performed on the current tesselation ...)
+{
+   /* record the current update */
+   for (... every tile T deleted in this update ...)
+   {  bi->MT_KillTile(T.index);  }
+   for (... every new vertex V created in this update ...)
+   {  V.index = MT_NULL_INDEX;  }
+   for (... every new tile T created in this update ...)
+   {
+      V1, V2, V3 =  ... the three vertices of T ...
+      V1.index = bi->MT_UseVertex(V1.index, V1.coordinates);
+      V2.index = bi->MT_UseVertex(V2.index, V1.coordinates);
+      V3.index = bi->MT_UseVertex(V3.index, V1.coordinates);
+      T.index = bi->MT_MakeTile();
+   }
+   bi->MT_EndUpdate();
+}
+
+/* record an update deleting the final tesselation */
+for (... every tile T of the current tesselation ...)
+{  bi->MT_KillTile(T.index);  }
+bi->MT_EndUpdate();
+
+/* end history recording */
+bi->MT_EndHistory();
+
+/* ...free all memory that is no longer needed... */
+
+/* set the description string to be associated with the resulting MT */
+bi->MT_SetDescription("A 2-dimensional MT in 3D");
+
+/* connect mt to the building interface */
+bi->MT_SetTarget(mt);
+   
+/* build mt from the history just recorded */
+bi->MT_Convert();
+
+/* now, mt contains the MT resulting from construction */
+
+<!--
+if (... directly building an MT ...)
+{  
+   /* connect mt to the building interface */
+   bi->MT_SetTarget(mt);
+   
+   /* build mt from the history just recored */
+   bi->MT_Convert();
+}
+
+else /* first write the history on a file */
+{  
+   /* write history */
+   bi->MT_Write(...);
+
+   /* connect mt to the building interface */
+   ht->MT_SetTarget(mt);
+
+   /* read history and build mt */
+   ht->MT_Read(...);
+}
+-->
+</PRE>
+
+<!-------------------------------------------------------------------------->
+
+</BODY>
+
+</HTML>

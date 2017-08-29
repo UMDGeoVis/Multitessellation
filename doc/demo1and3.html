@@ -1,0 +1,147 @@
+<HTML>  
+
+<TITLE>The MT (Multi-Tesselation) Package - Box Demo</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<H1>Box demo</H1>
+
+This demo uses a magic lens on a 3D object.
+
+<H3>How to run the demo</H3>
+
+The demo is available in two versions:
+<UL>
+<LI>
+<B>demo1</B>:
+This demo requires a two-dimensional MT embedded in three dimensions,
+with approximation errors associated with its tiles and 
+normal vectors associated with its vertices.
+<LI>
+<B>demo3</B>:
+This demo requires a two-dimensional MT embedded in three dimensions,
+it uses the value of triangle areas (rather than approximation errors)
+as a measure of accuracy.
+</UL>
+<P>
+
+Let the MT be contained in a file named <TT>xxx.mtf</TT>,
+tile errors be contained in file <TT>xxx.err</TT>, and vertex normals
+be contained in file <TT>xxx.nrm</TT> (the last two files are needed 
+only by demo1).
+To run the demo, type:
+<UL> <TT>demo1 xxx</TT> </UL>
+
+For instance, try <TT>demo1 ../data/bunny</TT>.
+<P>
+
+To exit the demo, strike key "Q" or "q" when the focus is in one 
+of the demo windows.
+
+<H3>Inside the demo</H3>
+
+The program extracts a triangle mesh that has a given approximation errror
+inside a cubic box (the "magic lens"), and is arbitrarily coarse outside it.
+The extraction parameters are:
+<UL>
+<LI> a focus condition s.t. active triangles are the ones intersecting a
+     cubic box;
+<LI> a resolution filter condition s.t. a triangle is feasible if its
+     approximation error is below a given threshold.
+</UL>
+
+The user can move the box interactively, and can change the extraction
+parameters. 
+<P>
+
+One windows is used for visualization:
+<UL>
+<LI>
+  the whole surface is shown at the center of the window in an orthogonal
+  projection from one of the six cardinal direction 
+  (x, y, or z; positive or negative).
+<LI>
+  the box is shown in red, the active triangles of the object are
+  drawn in jellow, the other triangles in white
+<LI>
+  the three axes of the reference system are shown (the x,y,z axis are
+  drawn in red, green, blue respectively)
+</UL>
+The viewed scene can be rotated and zoomed as explained next.
+<P>
+
+Another window shows the available commmands for interacting with the
+program.
+<P>
+
+<IMG ALIGN=MIDDLE SRC="GIF/d1view.gif" HEIGHT=250 WIDTH=240>
+<IMG ALIGN=MIDDLE SRC="GIF/d1log.gif" HEIGHT=250 WIDTH=150>
+
+<H3>User interaction</H3>
+
+User interaction is done by pressing the following keys when the 
+mouse focus is in one of the three windows of the program.
+
+<H4>Box movement</H4>
+<UL>
+<LI>
+  r/R: start moving the box in the negative and in the positive direction
+  of the x axis (the red axis)
+<LI>
+  g/G: start moving the box in the negative and in the positive direction
+  of the y axis (the green axis)
+<LI>
+  b/B: start moving the box in the negative and in the positive direction
+  of the z axis (the blue axis)
+<LI>
+  end: stop moving the box
+<LI>
+  home: bring the box to its initial position and size
+<LI>
+  pageup / pagedown: increase/decrease the speed of the box
+</UL>
+
+<H4>Triangle mesh extraction</H4>
+<UL>
+<LI> e / E: switch extractor type (dynamic / local)
+<LI> > / <: increase / decrease error threshold used inside the box
+<LI> + / -: enlarge / shrink the box
+</UL>
+
+<H4>Drawing</H4>
+<UL>
+<LI> w / W: switch to wireframe style (hidden line)
+<LI> f / F: switch to solid style, flat shading
+<LI> s / S: switch to solid style, smooth shading (using vertex normals 
+     provided in the MT - only for demo1)
+<LI> i / o: zoom in / out
+</UL>
+
+<H4>Rotations and translations</H4>
+<UL>
+<LI> F1: switch between rotation and translation mode
+<LI> left arrow / right arrow: 
+     if rotation mode, rotate around the z axis of the scene
+     (the green axis);
+     if translation mode, move the scene horizontally
+<LI> up arrow / down arrow: 
+     if rotation mode, rotate around an axis parallel to the
+     horizontal edge of the window;
+     if translation mode, move the scene vertically
+</UL>
+
+<H4>Termination</H4>
+<UL>
+<LI> q / Q: quit
+</UL>
+
+<H3>Remarks</H3>
+
+Visualization in hidden wireframe may sometimes produce artifacts
+(dashed and dotted lines, or portions of lines not properly hidden).
+
+</BODY>
+
+</HTML>

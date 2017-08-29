@@ -1,0 +1,230 @@
+<HTML>
+
+<TITLE>The MT Package - How to define an MT with features</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (6) --><H2>HOW TO DEFINE AN MT WITH A CERTAIN SET OF FEATURES</H2>
+
+Here, the term <B>feature</B> denotes some value associated with the
+vertices or with the tiles of an MT.
+
+A tile or vertex feature in an MT may (but does not necessarily need to)
+be stored in an attribute table. 
+Alternatively, it may be computed on-the-fly each time it is accessed
+(e.g., the normal vector to a triangle may
+be computed on-line from the triangle geometry).
+
+<!-- (6.1) --><H3>Suggested guidelines</H3>
+
+<OL>
+<LI> Define the <B>interface of each feature</B>, i.e., 
+     the functions that allow accessing the feature, and that every
+     MT having such feature must implement.
+     <P>     
+     Examples:
+     functions that return the approximation error of a tile,
+     the area of a tile.
+     <P>
+     Such interface will be contained in an abstract class, that we 
+     call <TT>WithYYYClass</TT>, where <TT>YYY</TT> is the name 
+     of the feature.
+     All specialized MTs with feature <TT>YYY</TT> will be subclasses of
+     <TT><A HREF="core.html#MULTITESS">MT_MultiTesselationClass</A></TT>
+     and of <TT>WithYYYClass</TT>.
+     <P>
+
+<LI> For each feature, <B>decide whether the feature must be stored</B>, 
+     or computed on-line each time it is accessed.
+     <P>
+     Examples:
+     the approximation error of a tile is stored explicitly,
+     the area of a tile is computed on-line.
+     <P>
+
+<LI> <B>Implement each feature which must be stored</B> by using 
+     an attribute table of the suitable type (i.e., a suitable subclass of
+     <TT><A HREF="core.html#ATTRTABLE">MT_AttrTableClass</A></TT>).
+     <P>
+     Example:
+     the approximation errors of tiles are stored in a float attribute table 
+     (class <TT><A HREF="core.html#XXXATTR">MT_FloatTableClass</A></TT>).
+     <P>
+     This will give a subclass of <TT>WithYYYClass</TT>, that we
+     call <TT>WithYYYTableClass</TT>. 
+     All specialized MTs with feature <TT>YYY</TT> stored in an attribute table
+     will be subclasses of
+     <TT><A HREF="core.html#MULTITESS">MT_MultiTesselationClass</A></TT>
+     and (indirectly, by the way of class
+     <TT>WithYYYTableClass</TT>) of <TT>WithYYYClass</TT>.
+     <P>
+
+<LI> Define a <B>class for the MT with all desired features</B>
+     by deriving from the MT and, for each feature <TT>YYY</TT>:
+     <UL>
+     <LI> from the abstract class <TT>WithYYYClass</TT>, 
+          which define the feature interface, if the
+          feature is not stored
+     <LI> from the class <TT>WithYYYTableClass</TT>, 
+          implementing the feature by an attribute table, if the
+          feature is stored
+     </UL>
+     For each feature falling in the first case, implement the functions 
+     for accessing the feature, inherited from the abstract class
+     <TT>WithYYYClass</TT>.
+     <P>
+     Example: implement the function that computes and returns the area
+     of a tile.
+</OL>
+
+<!-- (6.2) --><H3>An example</H3>
+
+We define an MT representing a <TT>k</TT>-dimensional scalar field.
+The features to be provided are:
+<UL>
+<LI> an <B>approximation error</B> associated with each tile
+<LI> a <B>field value</B> associated with each vertex
+</UL>
+
+We decide to store the approximation errors explicitly.
+For field values, we decide to represent a <TT>k</TT>-dimensional scalar 
+field as its graph: a <TT>k</TT>-dimensional MT embedded in <TT>k+1</TT>
+dimensions, where the last coordinate is the field value.
+With this convention, the vertex field is simply the last coordinate
+of each vertex. 
+Thus, it does not need to be stored separately.
+<P>
+
+<IMG ALIGN=MIDDLE SRC="GIF/class-b.gif" >
+
+We define the abstract interface
+for both tile errors and vertex fields, called 
+<TT><A HREF="exten.html#WITHTILERR">WithTileErrorClass</A></TT>
+and <TT><A HREF="exten.html#WITHVERTFIELD">WithFieldClass</A></TT>,
+respectively:
+<P>
+
+<PRE>
+typedef class WithTileErrorClass * WithTileError;
+
+class WithTileErrorClass
+{
+  public:
+
+  /*  Return the error associated with a tile t.  */
+  virtual float TileError(MT_INDEX t) = 0;
+};
+</PRE>
+
+<PRE>
+typedef class WithFieldClass * WithField;
+
+class WithFieldClass
+{
+  public:
+  
+  /*  Return the field value at a vertex v.  */
+  virtual float VertexField(MT_INDEX v) = 0;
+};
+</PRE>
+
+<P>
+
+For tile errors only, we define a class that implements the abstract
+interface by storing error values into a float attribute table.
+Such class, called 
+<TT><A HREF="exten.html#WITHTILERRTAB">WithTileErrorTableClass</A></TT>, 
+contains a pointer to an object of class <TT>MT_FloatTableClass</TT>. 
+It also implements other functions related to reading and writing
+tile errors; such functions are implemented by means of the internal
+float attribute table.
+
+<PRE>
+class WithTileErrorTableClass : public WithTileErrorClass
+{
+  protected:
+ 
+  /*  Auxiliary attribute table used to store tile errors.  */
+  MT_FloatTable my_error;
+    
+  public:
+
+  /*  Creator and destructor.  */
+  WithTileErrorTableClass(void)
+  {  my_error = new MT_FloatTableClass();  }   
+  ~WithTileErrorTableClass(void)
+  {  if (my_error) delete my_error; my_error = NULL;  }
+
+  /*  Function redefined from superclass WithTileErrorClass.  */
+  float TileError(MT_INDEX t) {  return my_error->MT_AttrValue(t);  }
+
+  /*  Read / write the tile errors.  */
+  int ReadTileErrors(FILE * fd) {  return ( my_error->MT_Read(fd) );  }
+  void WriteTileErrors(FILE * fd, int file_encoding = MT_ASCII_ENCODING)
+  {  my_error->MT_Write(fd, file_encoding);  }       
+
+  /*  Set and return the textual description used in the tile error file.
+      String s is at most MT_DESCR_LEN characters.  */
+  void SetTileErrorDescription(char * s)
+  {  my_error->MT_SetDescription(s);  }              
+  void TheTileErrorDescription(char * s)
+  {  my_error->MT_TheDescription(s);  }
+
+  protected:  
+
+  MT_FloatTable TheTileErrorTable(void)  {  return my_error;  }
+
+  friend class TileErrorBuildingInterfaceClass;
+};
+</PRE>
+
+We define the class for our MT with tile errors and vertex fields. 
+This is a subclass of <TT>MT_MultiTesselationClass</TT>, of 
+<TT>WithTileErrorTableClass</TT>, and of <TT>WithVertexFieldClass</TT>.
+The function for accessing the vertex field is implemented directly here.
+
+<PRE>
+typedef class FieldWithErrorClass * FieldWithError;
+
+class FieldWithErrorClass : public MT_MultiTesselationClass,
+                            public WithTileErrorTableClass,
+                            public WithFieldClass
+{
+  public:
+
+  /*  Return the field value for a vertex v. We assume that the MT
+      is given in the space containing the graph of the field,
+      thus the field value is the last coordinate of each vertex.  */
+  float Field(MT_INDEX v) {  return MT_VertexCoord(v, MT_VertexDim()-1);  }
+
+  /*  Constructor.  */
+  FieldWithErrorClass(int vert_dim, int tile_dim)
+  :      MT_MultiTesselationClass(vert_dim, tile_dim),
+         WithTileErrorTableClass()
+  { }
+};
+</PRE>
+
+An MT of class <TT><A HREF="exten.html#FIELDMT">FieldWithErrorClass</A></TT>
+will be read from two different
+files, one containing the MT, and the other one containing the
+tile errors, by using
+function <TT>MT_Read</TT> of class 
+<TT><A HREF="core.html#MULTITESS">MT_MultiTesselationClass</A></TT>, and 
+function <TT>ReadTileErrors</TT> of class 
+<TT><A HREF="exten.html#WITHTILERR">WithTileErrorTableClass</A></TT>,
+respectively.
+A similar remark holds for writing.
+<P>
+
+An MT of class <TT>FieldWithErrorClass</TT> will allow the use of extraction
+conditions that refer to functions <TT>TileError</TT> and <TT>Field</TT> 
+in their evaluation.
+
+<!-------------------------------------------------------------------------->
+
+</BODY>
+
+</HTML>

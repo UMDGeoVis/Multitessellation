@@ -1,0 +1,234 @@
+<HTML>
+
+<TITLE>The MT Package - The Multi-Tesselation</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-- (2) --><H2>THE MULTI-TESSELATION (MT)</H2>
+
+<!-- (2.1) --><H3>What is an MT?</H3>
+
+A Multi-Tesselation (MT) provides representations of a spatial object
+through simplicial complexes at variable resolution, i.e., complexes which
+can be more or less refined according to user-defined requirements. 
+Here, a spatial object can be any <TT>k</TT>-manifold subset of the
+<TT>d</TT>-dimensional Euclidean space, for generic <TT>k</TT> and
+<TT>d</TT>.
+<P>
+
+In the following, we use the term <B>tile</B> for a simplex, and 
+<B>tesselation</B> for a simplicial complex.
+This notation is motivated by historical reasons: the MT was initially
+developed for two-dimensional simplicial complexes and called
+Multi-Triangulation.
+In the above notation, we can still use the acronym MT for the
+dimension-independent case.
+<P>
+
+A variable resolution means that the resolution (density) of the tiles can
+be locally adapted to the needs of the application. For instance:
+<UL>
+<LI> A resolution decreasing with the distance from the viewpoint allows
+     high-quality images at a lower processing cost since the overall number 
+     of tiles is kept low by reducing the density in areas which are far 
+     away from the eye.
+     <P>
+<LI> The resolution can be high only in the proximity of some
+     interesting feature of the object (e.g., a road on a terrain).
+</UL>
+
+The user queries an MT by specifying two conditions, which evaluate a tile
+based on its spatial location, geometry, and possibly other attributes:
+<UL>
+<LI> A <B>resolution filter</B>, i.e., a condition telling whether or
+     not the resolution of a tile is acceptable;
+     <P>
+<LI> A <B>focus condition</B>, telling whether or not a tile is of 
+     interest for the application.
+</UL>
+
+The MT answers the query by returning a tesselation which represents 
+the object at the required resolution inside the area of interest.
+<P>
+
+<!-- (2.2) --><H3>What does an MT look like?</H3>
+
+An MT is <B>a partially ordered set of local update operations</B> which 
+progressively refine an initial low-resolution tesselation into a final 
+high-resolution tesselation.
+<P>
+
+The basic idea is the following:
+<P>
+
+We start from a sequence of update operations refining a tesselation
+(equivalently, we can start from a sequence of update operations coarsening
+a tesselation, and reverse the sequence). 
+<P>
+
+Each update operation (in the following simply called an <B>update</B>) 
+consists of removing a set of tiles and replacing them with another set 
+of tiles at a higher resolution, covering the same portion of object.
+<P>
+
+An update <TT>B</TT> <B>directly depends</B> on a previous one <TT>A</TT> if
+<TT>B</TT> removes some tile that has been created by <TT>A</TT>.
+The dependency relation is defined as the transitive closure of the relation
+of direct dependency, and it is a <B>partial order</B>. 
+<P>
+
+Obviously, an update <TT>B</TT> cannot be performed if all updates <TT>A</TT>, such that <TT>B</TT>
+depends on <TT>A</TT>, have not been performed before. However, mutually independent
+updates can be interleaved in any order, and even omitted from the sequence.
+<P>
+
+Dependency typically occurs between updates performed at nearby spatial
+locations. It is possible to omit from the sequence the updates
+occurring in areas that are not of interest, thus obtaining tesselations
+whose resolution is variable through space.
+<P>
+
+The Multi-Tesselation captures the relation of dependency (partial order)
+between the updates of a sequence, and represents it as a <B>directed acyclic
+graph</B> (DAG):
+<UL>
+<LI> nodes are update operations;
+<LI> arcs are links of direct dependency.
+</UL>
+
+An arc <TT>(A,B)</TT> exists whenever update <TT>B</TT> depends on
+<TT>A</TT>, i.e., a non-empty set of tiles introduced by <TT>A</TT> is
+removed by <TT>B</TT>.
+<P>
+
+An additional node represents the update that creates the initial coarse
+tesselation, and it is called the <B>root</B> of the MT.
+<P>
+
+The DAG provides all the legal ways to obtain sequences of subsets of the
+original set of updates which are consistent with the partial order, i.e.,
+which can be performed on the initial tesselation, and give a tesselation
+as a result.
+<P>
+
+<!-- (2.3) --><H3>How does an MT work?</H3>
+
+A <B>consistent set of updates</B> in an MT is a non-empty subset <TT>N</TT>
+of its nodes, such that, for every update <TT>A</TT> in <TT>N</TT>,
+also all the parents of <TT>A</TT> are in <TT>N</TT>
+<P>
+
+The updates of a consistent set can be performed in any total order which
+extends the partial order represented in the DAG, and the result is a
+tesselation. By using different consistent sets, tesselations representing
+the object at different (possibly variable in space) resolutions can be
+obtained.
+<P>
+
+Given a <B>resolution filter</B> defined by the user, an MT can automatically
+provide a tesselation of "minimum cost", sufficient to guarantee that the
+user-defined resolution requirements are satisfied.
+
+<!-- The user can decide whether the "minimun cost" must take into account only
+the number of tiles composing the tesselation, or it must refer to the
+"minimum cost of update" with respect to a tesselation previously obtained
+from the same MT. -->
+<P>
+
+There are two criteria for interpreting the words "minimum cost":
+
+<UL>
+<LI> <B>Static criterion: </B><BR>
+  A tesselation generated by the smallest consistent set of nodes
+  sufficient to satisfy the resolution filter.
+  A minumim number of nodes in the consistent set implies a minimum number 
+  of tiles in the tesselation.
+  The algorithm used to determine such a consistent set performs a top-down 
+  traversal of the DAG: it starts from a set containing just the root, 
+  and progressively includes nodes to refine the corresponding tesselation 
+  where the resolution filter is not satisfied.
+  <P>
+<LI> <B>Dynamic criterion: </B><BR>
+  We assume that the extraction engine remembers the consistent set
+  <TT>N</TT> of nodes (and its tesselation) resulting from the previous 
+  query.
+  The answer to the new query is the tesselation corresponding to a
+  consistent set <TT>N'</TT> of minimum distance from <TT>N</TT> 
+  (where the distance is 
+  measured as the number of nodes which must be added to and deleted from 
+  <TT>N</TT> to obtain <TT>N'</TT>).
+  This implies a minimum computational cost, if the new query parameters 
+  are close enough to the previous ones.
+  The algorithm consists in an iterative modification of the current 
+  set of nodes by:
+  <UL>
+  <LI> adding nodes that refine the tesselation where the resolution
+       filter is not satisfied;
+  <LI> deleting nodes which are not strictly necessary to satisfy the
+       resolution filter, thus coarsening the tesselation where possible.
+  </UL>
+</UL>
+
+In addition, the user can specify a <B>focus condition</B> in order to
+restrict the application of the resolution filter, and possibly, the output
+tesselation, to the parts of the object which are of interest for him.
+<P>
+
+There are two criteria to define the effect of a focus condition:
+<UL>
+<LI> <B>Global criterion: </B><BR>
+  The influence of the resolution filter is restricted to those tiles 
+  which satisfy the focus condition.
+  It is like applying a "modified" resolution filter equal to
+  "(NOT focus) OR filter".
+  The output tesselation has the following property: 
+  <UL>
+  <LI> it covers the whole object;
+  <LI> all tiles that satisfy the focus condition, satisfy the resolution
+       filter condition as well.
+  </UL>
+  Tiles which do not satisfy the focus condition may be arbitrarily coarse.
+  <P>
+<LI> <B>Local criterion: </B><BR>
+  The output tesselation is restricted to those tiles which satisfy the
+  focus condition.
+  The output tesselation is formed by tiles that satisfy both the
+  focus condition and the resolution filter, possibly covering just a 
+  portion of the object.
+  The algorithm traverses fewer nodes and arcs in the DAG, since those
+  not containing active tiles are pruned off.
+</UL>
+
+The global criterion is available in both versions: the static and the
+dynamic one. Only the static version of the local criterion is available.
+<P>
+
+<!-- (2.4) --><H3>How is an MT built?</H3>
+
+An MT can be built through any iterative method for the generation
+of tesselations approximating spatial objects.
+Such methods modify a tesselation by performing a sequence of updates.
+They are of two types:
+<UL>
+<LI> <B>Progressive refinement: </B><BR>
+  Start from a tesselation at low resolution and progressively refine it to
+  the maximum resolution.  Examples of updates, for a triangulation, are:
+  adding a vertex, expanding a vertex into an edge or a triangle.
+  <P>
+<LI> <B>Progressive coarsening: </B><BR>
+  Start from a tesselation at high resolution and progressively coarsen it
+  to the minimum resolution.  Examples of updates, for a triangulation, are:
+  removing a vertex, collapsing an edge or a triangle into a vertex.
+</UL>
+
+The construction of an MT through progressive refinement reduces detecting
+links of direct dependency between the updates, and arranging the updates
+into a DAG based on such links.
+The construction of an MT through progressive coarsening is done by
+"reversing" the sequence of updates in order to simulate a progressive
+refinement.
+<P>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,1286 @@
+<HTML>
+
+<TITLE>The MT Package - System Extensions</TITLE>
+
+<BODY BGCOLOR = "#FFFFFF">
+
+<!-------------------------------------------------------------------------->
+
+<!-- (11) --><H2>SYSTEM EXTENSIONS - CLASS HIERARCHY</H2>
+
+<!-- (11.1) --><H2>Predefined MT Features</H2>
+
+<A NAME="WITHTILERR"></A>
+
+<H3> <TT>WithTileErrorClass</TT> </H3>
+
+Abstract class.
+
+<H4>Meaning</H4>
+
+It contains the additional functions that an MT having approximation errors
+associated with its tiles must provide.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>float TileError(MT_INDEX t)</TT>: return the approximation error 
+     of tile <TT>t</TT>.
+<LI> <TT>float MaxTileError(void), float MinTileError(void)</TT>: return 
+     the maximum and the minimum error among all tiles of the MT.
+</UL>
+
+<A NAME="WITHVERTFIELD"></A>
+
+<H3> <TT>WithFieldClass</TT> </H3>
+
+Abstract class.
+
+<H4>Meaning</H4>
+
+It contains the additional functions that an MT with scalar field values
+associated with its vertices must provide.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>float VertexField(MT_INDEX v)</TT>: return the field value
+     at vertex <TT>v</TT>.
+<LI> <TT>float MaxVertexField(void), float MinVertexField(void)</TT>:
+     return the maximum and the minimum field value among all vertices
+     of the MT.
+</UL>
+
+<A NAME="WITHVERTNORM"></A>
+
+<H3> <TT>WithVertexNormalClass</TT> </H3>
+
+Abstract class.
+
+<H4>Meaning</H4>
+
+It contains the additional functions that an MT with normal vectors associated with
+its vertices must provide.
+The MT must have two-dimensional tiles (triangles) and must be embedded in a
+three-dimensional space.
+
+<H4>Functions</H4>
+
+<UL>                            
+<LI> <TT>void VertexNormal(MT_INDEX v, float *x, float *y, float *z)</TT>:
+     return the three components of the normal vector to the
+     surface at vertex <TT>v</TT>.
+<LI> <TT>float VertexNX(MT_INDEX v), float VertexNY(MT_INDEX v),
+     float VertexNZ(MT_INDEX v)</TT>: return one component each
+     of the normal vector to the surface at vertex <TT>v</TT>.
+</UL>
+
+<A NAME="WITHTILERRTAB"></A>
+
+<H3> <TT>WithTileErrorTableClass</TT> </H3>
+
+Subclass of <TT><A HREF="#WITHTILERR">WithTileErrorClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Class implementing tile errors by storing them in a float
+attribute table.
+It contains internally a pointer to an object of class 
+<TT>MT_FloatTableClass</TT>.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters. The resulting tile error table is empty.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>int ReadTileErrors(FILE * fd),
+     void WriteTileErrors(FILE * fd, int file_encoding = MT_ASCII_ENCODING)</TT>:
+     read and write tile errors from / to a file.
+<LI> <TT>void SetTileErrorDescription(char * s), 
+     void TheTileErrorDescription(char * s)</TT>:
+     set and return the textual description used in the tile error file;
+     string <TT>s</TT> is at most <TT>MT_DESCR_LEN</TT> characters long.
+</UL>
+
+<A NAME="WITHVERTNORMTAB"></A>
+
+<H3> <TT>WithVertexNormalTableClass</TT> </H3>
+
+Subclass of <TT><A HREF="#WITHVERTNORM">WithVertexNormalClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Class implementing vertex normals by storing them in a float
+vector attribute table.
+It contains internally a pointer to an object of class 
+<TT>MT_FloatVectorTableClass</TT>; 
+the length of the attribute vectors is 3 elements.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters. The resulting vertex normal table
+is empty.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>int ReadVertexNormals(FILE * fd),
+     void WriteVertexNormals(FILE * fd, int file_encoding)</TT>:
+     read and write vertex normals from / to a file.
+<LI> <TT>void SetVertexNormalDescription(char * s),
+     void TheVertexNormalDescription(char * s)</TT>:
+     set and return the textual description used in the vertex 
+     normal file; string <TT>s</TT> is at most <TT>MT_DESCR_LEN</TT>
+     characters long.
+</UL>
+
+<!-- (11.2) --><H2>Predefined Building Interfaces for MT Features</H2>
+
+<A NAME="WITHTILERRBUILD"></A>
+
+<H3> <TT>TileErrorBuildingInterfaceClass</TT> </H3>
+
+Subclass of 
+<TT><A HREF="core.html#BUILDINTERF">MT_BuildingBaseClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Building interface for tile errors of an MT.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>void MakeTileError(MT_INDEX t, float err)</TT>: record the error 
+     of a tile during the refinement / coarsening of a tesselation;
+     <TT>t</TT> is the <TT>MT_INDEX</TT> field of the tile.
+<LI> <TT>void StartTileErrorHistory(void), void EndTileErrorHistory(void)</TT>:
+     start and end recording tile errors.
+<LI> <TT>int ConvertTileErrors(void)</TT>: convert the tile errors just 
+     recorded into an attribute table; return <TT>1</TT> on success, <TT>0</TT> on failure.
+<LI> <TT>void SetTargetTileErrorTable(WithTileErrorTable m)</TT>:
+     set the internal float attribute table of <TT>m</TT> as the float
+     attribute table to be built.
+<LI> <TT>void SetTileErrorDescription(char * s), 
+     void TheTileErrorDescription(char * s)</TT>: set and
+     return the textual description to be used in the file
+     that will contain the tile error table; string <TT>s</TT> is at most
+     <TT>MT_DESCR_LEN</TT> characters long.     
+</UL>
+
+<A NAME="WITHVERTNORMBUILD"></A>
+
+<H3> <TT>VertexNormalBuildingInterfaceClass</TT> </H3>
+
+Subclass of 
+<TT><A HREF="core.html#BUILDINTERF">MT_BuildingBaseClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Building interface for vertex normals of an MT.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters.
+
+<H4>Functions</H4>
+
+<UL>                            
+<LI> <TT>void StartVertexNormalHistory(void),
+     void EndVertexNormalHistory(void)</TT>:
+     start and end recording vertex normals.
+<LI> <TT>int ConvertVertexNormals(void)</TT>: 
+     build a vertex normal table from the recorded vertex normals.
+<!--
+<LI> <TT>void WriteVertexNormals(FILE * fd, int file_encoding)</TT>:
+     write the recorded vertex normals into a file.
+<LI> <TT>void ReadVertexNormals(FILE * fd)</TT>: read previously recorded vertex
+     normals from a file and build a vertex normal table from them.
+-->
+<LI> <TT>void SetTargetVertexNormalTable(WithVertexNormalTable m)</TT>:
+     set the internal float vector attribute table of <TT>m</TT> as
+     the vertex normal table to be built.
+<LI> <TT>void SetVertexNormalDescription(char * s), 
+     void TheVertexNormalDescription(char * s)</TT>: set and
+     return the textual description to be used in the file
+     that will contain the vertex normal table; string <TT>s</TT> is at most   
+     <TT>MT_DESCR_LEN</TT> characters long.
+</UL>
+
+<!-- (11.3) --><H2>Predefined MTs With Features</H2>
+
+<A NAME="FIELDMT"></A>
+
+<H3> <TT>FieldWithErrorClass</TT> </H3>
+
+Subclass of 
+<TT><A HREF="core.html#MULTITESS">MT_MultiTesselationClass</A></TT>,
+<TT><A HREF="#WITHTILERRTAB">WithTileErrorTableClass</A></TT>, 
+<TT><A HREF="#WITHVERTFIELD">WithFieldClass</A></TT>.
+
+<H4>Meaning</H4>
+
+An MT representing a scalar field with approximation errors associated
+with its tiles.
+<P>
+
+Tile errors are stored into an attribute table.
+Field values at the vertices are not stored, but computed by exploiting
+the property explained below.
+The MT is given embedded in the space containing the graph of the field:
+tiles are in <TT>(k+1)</TT>-dimensions, where the first <TT>k</TT> 
+coordinates are the domain and the last one is the field value.
+This has several advantages. For instance, it
+allows seeing a bivariate field either as a 2D tesselation with field
+values or as a surface in 3D.
+It implements function <TT>VertexField</TT> by returning the last
+coordinate.
+
+<H4>Constructor</H4>
+
+Parameters: the dimension of the embedding space and the dimension of tiles
+(same as class <TT>MT_MultiTesselationClass</TT>).
+
+<A NAME="FIELDERRBUILD"></A>
+
+<H3>FieldWithErrorBuildingInterfaceClass</H3>
+
+Subclass of 
+<TT><A HREF="core.html#BUILDINTERF">MT_BuildingInterfaceClass</A></TT> and 
+<TT><A HREF="#WITHTILERRBUILD">TileErrorBuildingInterfaceClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Building interface for an MT with errors associated with its tiles.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters.
+
+<A NAME="SURFMT"></A>
+
+<H3> <TT>SurfaceWithErrorClass</TT> </H3>
+
+Subclass of 
+<TT><A HREF="core.html#MULTITESS">MT_MultiTesselationClass</A></TT>,
+<TT><A HREF="#WITHTILERR">WithTileErrorTableClass</A></TT>, 
+<TT><A HREF="#WITHVERTNORM">WithVertexNormalTableClass</A></TT>.
+
+<H4>Meaning</H4>
+
+An MT representing a surface with tile errors and vertex normals.
+Both tile errors and vertex normals are stored into attribute tables.
+The MT must be embedded in 3D space.
+<P>
+
+<H4>Constructor</H4>
+
+The constructor has no parameters: the dimension of tiles is
+constrained to be <TT>= 2</TT> and the embedding space is constrained 
+to be <TT>3</TT>-dimensional.
+
+<H4>SurfaceWithErrorBuildingInterface</H4>
+
+<H4>Meaning</H4>
+
+Building interface for an MT with tile errors associated with its tiles
+and normals associated with its vertices.
+Subclass of 
+<TT><A HREF="core.html#BUILDINTERF">MT_BuildingInterfaceClass</A></TT>, of 
+<TT><A HREF="#WITHTILERRBUILD">TileErrorBuildingInterfaceClass</A></TT>, 
+and of 
+<TT><A HREF="#WITHVERTNORMBUILD">VertexNormalBuildingInterfaceClass</A></TT>.
+
+<H4>Constructor</H4>
+
+The constructor has no parameters.
+
+<!-- (11.4) --><H2>Predefined Resolution Filters</H2>
+
+<A NAME="THRESHOLD"></A>
+
+<H3> <TT>ThresholdClass</TT> </H3>
+
+Abstract class.
+
+<H4>Meaning</H4>
+
+A class of objects that, given a tile <TT>t</TT> in an MT, computes a
+float value on <TT>t</TT>.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>float ThresholdValue(MT_MultiTesselation m, MT_INDEX t)</TT>:
+     return the threshold value for a tile.
+<LI> <TT> int IsGood(MT_MultiTesselation m)</TT>: 
+     return <TT>1</TT> if this threshold can be applied to MT <TT>m</TT>,
+     <TT>0</TT> otherwise
+     (some thresholds may require MTs with tiles of a certain
+     dimension, or embedded in a space of a certain dimension).
+</UL>
+
+<A NAME="UNIFTHR"></A>
+
+<H3> <TT>UnifThresholdClass</TT> </H3>
+
+Subclass of <TT><A HREF="#THRESHOLD">ThresholdClass</A></TT>.
+
+<H4>Meaning</H4>
+
+A threshold returning the same value on all tiles.
+
+<H4>Constructor</H4>
+
+Parameter: one float which is the threshold value.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>float SetThreshold(float v)</TT>: set a new threshold value.
+<LI> <TT>float TheValue(void)</TT>: return the current threshold value.
+</UL>
+
+<A NAME="DEPLAW"></A>
+
+<H3> <TT>DepLawClass</TT> </H3>
+
+<H4>Meaning</H4>
+
+A class of objects describing the dependency of a float, that we
+call <TT>value</TT> from a float, that we call <TT>argument</TT>.
+The dependency law is described by the following parameters:
+<UL>
+<LI> <TT>value0</TT>: value returned when <TT>argument = 0</TT>
+<LI> <TT>arg1</TT>: a reference argument
+<LI> <TT>value1</TT>: value returned when <TT>argument = arg1</TT>
+<LI> <TT>dep_type</TT>: type of dependency, describing the shape of the
+     curve in the <TT>argument-value</TT> plane that interpolates
+     the two points <TT>(0,value0), (arg1,value1)</TT>.
+</UL>
+
+The type of dependency may be linear, quadratic, square root, exponential
+(macros <TT>MT_LINEAR_DEP, MT_QUADR_DEP, MT_SQRT_DEP, MT_EXPON_DEP</TT>, 
+respectively).
+<BR>
+
+The law is used within a threshold to describe the dependency of 
+the threshold value from some tile feature.
+
+<H4>Constructor</H4>
+
+Parameters: the four law parameters listed above.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>float MT_ComputeValue(float arg)</TT>: 
+     return the value for an argument; the argument must not be negative.
+<LI> <TT>void MT_SetLaw(float v0, float a1, float v1, int dep),
+     void MT_TheLaw(float * v0, float * a1, float * v1, int * dep)</TT>:
+     set and return the parameters of this law.
+</UL>
+
+<A NAME="PD2TRI"></A>
+
+<H3> <TT>PDist2ThresholdOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#THRESHOLD">ThresholdClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Threshold that computes its value by applying a dependency law
+on the (squared) distance of a tile from a point.
+The distance is computed in two dimensions,
+and applies to MTs where tiles are triangles.
+If the MT is embedded in more than 2D, only the first two coordinates
+of each vertex are considered for computing the distance.
+
+<H4>Constructor</H4>
+
+Parameters: the coordinates <TT>(x,y)</TT> of a point, and a dependency law.
+
+<A NAME="PD3TRI"></A>
+
+<H3> <TT>PDist3ThresholdOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#THRESHOLD">ThresholdClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Threshold that computes its value by applying a dependency law
+on the (squared) distance of a tile from a point.
+The distance is computed in three dimensions,     
+and applies to MTs where tiles are triangles.
+If the MT is embedded in more than 3D, only the first three coordinates
+of each vertex are considered for computing the distance.
+
+<H4>Constructor</H4>
+
+Parameters: the coordinates <TT>(x,y,z)</TT> of a point, and a dependency
+law.
+
+<A NAME="PD3TETRA"></A>
+
+<H3> <TT>PDist3ThresholdOnTetrahedraClass</TT> </H3>
+
+Subclass of <TT><A HREF="#THRESHOLD">ThresholdClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Threshold that computes its value by applying a dependency law
+on the (squared) distance of a tile from a point.
+The distance is computed in three dimensions,     
+and applies to MTs where tiles are tetrahedra.
+If the MT is embedded in more than 3D, only the first three coordinates
+of each vertex are considered for computing the distance.
+
+<H4>Constructor</H4>
+
+Parameters: the coordinates <TT>(x,y,z)</TT> of a point, and a dependency
+law.
+
+<A NAME="ERRFLT"></A>
+
+<H3> <TT>TileErrFilterClass</TT> </H3>
+
+Subclass of <TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+A resolution filter applying a given threshold to tile errors of an MT.
+A tile <TT>t</TT> is considered as feasible if its error is 
+below the threshold value for <TT>t</TT>.
+This resolution condition can only be applied to MTs that are subclasses
+of <TT>MT_WithTileErrorClass</TT> and implement the function 
+<TT>MT_TileError</TT>.
+
+<H4>Constructor</H4>
+
+Parameters: an object of class <TT>WithTileErrorClass</TT> (the MT on which
+the filter will be applied), and a threshold.
+We can create conditions that apply different thresholds to the tile errors.
+
+<A NAME="AREA2TRI"></A>
+
+<H3> <TT>TriangleArea2FilterClass</TT> </H3>
+
+Subclass of <TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+A resolution filter applying a given threshold to tile areas.
+The MT must be 2-dimensional (tiles are triangles).
+The area is computed in 2D. 
+If the embedding space has more than two dimensions, only the first
+two are considered.
+
+<H4>Constructor</H4>
+
+Parameters: the threshold to be used.
+We can create conditions that apply different thresholds to the tile areas.
+
+<A NAME="AREA3TRI"></A>
+
+<H3> <TT>TriangleArea3FilterClass</TT> </H3>
+
+Subclass of <TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+A resolution filter applying a given threshold to tile areas.
+The MT must be 2-dimensional (tiles are triangles).
+The area is computed in 3D. 
+If the embedding space has more than three dimensions, only the first
+three are considered.
+
+<H4>Constructor</H4>
+
+Parameters: the threshold to be used.
+We can create conditions that apply different thresholds to the tile areas.
+
+<A NAME="CIRCUM2TRI"></A>
+
+<H3> <TT>Circumradius2FilterClass</TT> </H3>
+
+Subclass of <TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+A resolution filter applying a given threshold to the radius
+of the circumcircle of a tile.
+The circumcircle is computed in 2D.
+This resolution condition can only be applied to MTs with two-dimensional
+tiles (i.e., triangles).
+If the MT is embedded in more than two dimensions, only the first two
+vertex coordinates are considered for computing the circum-circle.
+
+<H4>Constructor</H4>
+
+Parameters: the threshold to be used.
+We can create conditions that apply different thresholds to the curcumradius.
+
+<A NAME="CIRCUM3TRI"></A>
+
+<H3> <TT>Circumradius3FilterClass</TT> </H3>
+
+Subclass of <TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+A resolution filter applying a given threshold to the radius
+of the circumcircle of a tile.
+The circumcircle is computed in 3D.
+This resolution filter condition can only be applied to MTs with
+two-dimensional tiles (i.e., triangles) in three or more dimensions.
+If the MT is embedded in more than three dimensions, only the first three
+vertex coordinates are considered for computing the circum-circle.
+
+<H4>Constructor</H4>
+
+Parameters: the threshold to be used.
+We can create conditions that apply different thresholds to the curcumradius.
+
+<A NAME="FREEBOX"></A>
+
+<H3> <TT>FreeBoxClass</TT> </H3>
+
+<H4>Meaning</H4>
+
+An axis-parallel box in <TT>d</TT> dimensions, for generic <TT>d</TT>,
+with a certain size but not a specified location.
+
+<H4>Constructor</H4>        
+
+Parameters: 
+The dimension of the embedding space and, optionally, an array containing
+the box side length along the axes of the embedding space.
+If no array is given, all sides have a null length (the resulting box
+degenerates to a point).
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>int BoxDim(void)</TT>: return the dimension of the embedding 
+     space.
+<LI> <TT>void SetBox (float * side_len)</TT>: set the dimensions of the 
+     box given an array containing the side length along each axis of
+     the space.
+<LI> <TT>void SetEdgeLength (int i, float w)</TT>: set the side length 
+     along the direction of the <TT>i</TT>-th coordinate axis;
+     parameter <TT>i</TT> must be between <TT>0</TT> and
+     <TT>int BoxDim()-1</TT>.
+<LI> <TT>void SetBox (float lx, float ly), 
+     void SetBox (float lx, float ly, float lz)</TT>: as above, for
+     the case of a box in two and three dimensions, respectively.
+<LI> void SetLengthX (float wx), void SetLengthY (float wy),
+     void SetLengthZ (float wz)</TT>: set the length of the edge
+     along the first, second, and third axis.
+     <TT>void SetLengthZ (float wz)</TT> can only be called if the box
+     is in 3D.
+<LI> <TT>void TheBox (float ** side_len)</TT>:
+     return a pointer to the array of edge lengths.
+<LI> <TT>void TheBox (float *lx, float *ly),
+     void TheBox (float *lx, float *ly, float *lz)</TT>:
+     return the edge lengths in the 2D and in the 3D case, respectively.
+</UL>
+
+<A NAME="BOXFLT"></A>
+
+<H3> <TT>BoxFilterClass</TT> </H3>
+
+Subclass of <TT><A HREF="#FREEBOX">FreeBoxClass</A></TT> 
+and of <TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+  
+Resolution filter condition for which a tile is feasible 
+if it fits in a given axis-parallel box. 
+
+<H4>Constructor</H4>
+
+Parameters:
+The dimension of the embedding space and an array containing
+the box side length along the axes of the embedding space.
+
+<!-- (11.5) --><H2>Predefined Focus conditions</H2>
+
+<!--
+<H3>Naming convention</H3>
+
+If necessary, the name of a condition contains the number of dimensions in 
+which the MT must be embedded, and indication of the type of tiles.
+-->
+
+<A NAME="POINT"></A>
+
+<H3> <TT>PointClass</TT> </H3>
+
+<H4>Meaning</H4>
+
+A point in <TT>d</TT>-dimensional space, for generic <TT>d</TT>.
+
+<H4>Constructor</H4>
+
+Parameter: the dimension of the embedding space.
+The resulting point is located at the origin.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>inline int PointDim(void)</TT>: return the dimension of
+     the embedding space. 
+<LI> <TT>void SetPoint(float * coord), void ThePoint(float * coord)</TT>: 
+     set and return the point coordinates as an array of as many floats as
+     the dimension of the space.
+<LI> <TT>void SetPoint(float x, float y), 
+     void ThePoint(float *x, float *y)</TT>: 
+     set and return the point coordinates in the 2D case.
+<LI> <TT>void SetPoint(float x, float y, float z),
+     void ThePoint(float *x, float *y, float *z)</TT>:
+     set and return the point coordinates in the 3D case.
+<LI> <TT>void Translate (float * trans_vector)</TT>: translate the point.
+<LI> <TT>void Translate (float vectorX, float vectorY),
+     Translate (float vectorX, float vectorY, float vectorZ)</TT>: 
+     translate the point in the 2D and 3D case, respectively.
+</UL>
+
+<A NAME="POINT2TRI"></A>
+
+<H3> <TT>Point2FocusOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#POINT">PointClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Focus condition considering a tile as active if it contains a point 
+inside or on its boundary.
+The point is in 2D. The MT must have 2-dimensional tiles (triangles).
+If the dimension of the embedding space is >2, then the extra coordinates
+are not considered. This is equivalent to applying the point-in-tile
+test to the projections of the MT tiles on the <TT>x-y</TT> plane.
+
+<H4>Constructor</H4>
+
+Parameters: the coordinates <TT>(x,y)</TT> of a point.
+
+<A NAME="POINT3TETRA"></A>
+
+<H3> <TT>Point3FocusOnTetrahedraClass</TT> </H3>
+
+Subclass of <TT><A HREF="#POINT">PointClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Focus condition considering a tile as active if it contains a point 
+inside or on its boundary.
+The point is in 3D. The MT must have 3-dimensional tiles (tetrahedra).
+If the dimension of the embedding space is >3, then the extra coordinates
+are not considered. This is equivalent to applying the point-in-tile
+test to the projections of the MT tiles on the <TT>x-y-z</TT> subspace.
+
+<H4>Constructor</H4>
+
+Parameters: the coordinates <TT>(x,y,z)</TT> of a point.
+
+<A NAME="BOX"></A>
+
+<H3> <TT>BoxClass</TT> </H3>
+
+<H4>Meaning</H4>  
+
+An axis-parallel box in <TT>d</TT>-dimensional space, for generic <TT>d</TT>.
+
+<H4>Constructor</H4>
+
+Parameters: 
+<UL>
+<LI> The dimension of the space, 
+     and min and max coordinates of the box, given 
+     as two arrays of as many floats as the dimension of the embedding space.
+<LI> Simply the dimension of the space, the resulting box has
+     a null size and both max and min coordinates are all zeroes.
+</UL>
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>int BoxDim(void)</TT>: return the dimension of the 
+     embedding space.
+
+<LI> <TT>void SetBox (float * min_coord, float * max_coord),
+     void TheBox (float ** min_coord, float ** max_coord)</TT>:
+     set and return the max and min coordinates of the box, 
+     as arrays of as many floats as the dimension of the space.
+<LI> <TT>void SetBox (float x1, float y1, float x2, float y2),
+     void TheBox (float *x1, float *y1, float *x2, float *y2)</TT>:
+     set and return the max and min coordinates of the box in the 2D case.
+<LI> <TT>void SetBox (float x1, float y1, float z1, 
+     float x2, float y2, float z2),
+     void TheBox (float *x1, float *y1, float *z1,
+     float *x2, float *y2, float *z2)</TT>:
+     set and return the max and min coordinates of the box in the 3D case.
+
+<LI> <TT>void SetEdgeLength (int i, float w)</TT>:
+     set the length of the box side in the i-th dimension,
+     the min coordinate is not changed, the max coordinate is recomputed.
+<LI> <TT>void SetLengthX(float wx), void SetLengthY (float wy),
+     void SetLengthZ (float wz)</TT>:
+     set the length of the box side in the <TT>x-, y-</TT>, and 
+     <TT>z</TT>-dimension; the min coordinate is not changed,
+     the max coordinate is recomputed.
+
+<LI> <TT>void MoveTo (float * anchor_point)</TT>:
+     move the box in such a way to place its 
+     min coordinates at the specified anchor point.
+<LI> <TT>void MoveTo (float anchorX, float anchorY), 
+     void MoveTo (float anchorX, float anchorY, float anchorZ)</TT>:
+     move the box in such a way to place its
+     min coordinates at the specified anchor point
+     in the 2D and 3D case, respectively.
+
+<LI> <TT>void Translate (float * trans_vector)</TT>:
+     translate the box of the given translation vector.
+<LI> <TT> void Translate (float vectorX, float vectorY),
+     void Translate (float vectorX, float vectorY, float vectorZ)</TT>:
+     translate the box of the given translation vector
+     in the 2D and 3D case, respectively.
+</UL>
+
+<A NAME="BOX2TRI"></A>
+
+<H3> <TT>Box2FocusOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#BOX">BoxClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs with 2-dimensional tiles (triangles).
+It considers a tile as active if it intersects a box
+in 2 dimensions, i.e., an axis-parallel rectangle.
+If the embedding space of the MT has more than 2-dimensions,
+just the first two vertex coordinates are considered.
+The strict and the loose evaluation are the same.
+
+<H4>Constructor</H4>
+
+Parameters: the min and max coordinates of the box, specified either as
+two arrays of two floats each, or as four floats 
+<TT>(x1,y1), (x2,y2)</TT>.
+
+<A NAME="BOX3TRI"></A>
+
+<H3> <TT>Box3FocusOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#BOX">BoxClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs with 2-dimensional tiles (triangles)
+embedded in at least 3 dimensions, with errors associated with their tiles.
+The MT must belong to a subclass of 
+<TT><A HREF="#WITHTILERR">MT_WithTileErrorClass</A></TT> 
+which implements function <TT>MT_TileError</TT>.
+<P>
+
+A tile is considered as active if it intersects a box
+in 3 dimensions, i.e., an axis-parallel cuboid.
+If the embedding space of the MT has more than 3-dimensions,
+just the first three vertex coordinates are considered.
+The loose evaluation takes tile errors into account.
+
+<H4>Constructor</H4>
+
+Parameters:
+an object of class <TT>WithTileErrorClass</TT> (the MT on which
+the filter will be applied),
+the min and max coordinates of the box, specified either as
+two arrays of three floats each, or as six floats
+<TT>(x1,y1,z1), (x2,y2,z2)</TT>.
+
+<A NAME="BOX3TETRA"></A>
+
+<H3> <TT>Box3FocusOnTetrahedraClass</TT> </H3>
+
+Subclass of <TT><A HREF="#BOX">BoxClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs with 3-dimensional tiles (tetrahedra).
+It considers a tile as active if it intersects a box
+in 3 dimensions, i.e., an axis-parallel cuboid.
+If the embedding space of the MT has more than 3-dimensions,
+just the first three vertex coordinates are considered.
+The strict and the loose evaluation mode are the same.
+
+<H4>Constructor</H4>
+
+Parameters:
+the min and max coordinates of the box, specified either as
+two arrays of three floats each, or as six floats
+<TT>(x1,y1,z1), (x2,y2,z2)</TT>.
+
+<A NAME="SEGMENT"></A>
+
+<H3> <TT>SegmentClass</TT> </H3>
+
+<H4>Meaning</H4>  
+
+A straight-line segment embedded in <TT>d</TT> dimensions, for generic <TT>d</TT>.
+
+<H4>Constructor</H4>
+
+Parameter: the dimension of the embedding space.
+Both endpoints of the resulting segment 
+are at the origin (the segment degenerates into a point).
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>int SegmentDim(void)</TT>: 
+     return the dimension of the embedding space.
+<LI> <TT>void SetSegment(float * coord1, float * coord2),
+     void TheSegment(float * coord1, float * coord2)</TT>:
+     return and set the segment endpoints, each specified as an 
+     array of as many floats as the dimension of the space.
+<LI> <TT>void SetSegment(float x1, float y1, float x2, float y2),
+     void TheSegment(float * x1, float * y1, float * x2, float * y2)</TT>:
+     set and return the coordinates of the two segment endpoints
+     in the 2D case.
+<LI> <TT>void SetSegment(float x1, float y1, float z1,
+     float x2, float y2, float z2),
+     void TheSegment(float * x1, float * y1, float * z1,
+     float * x2, float * y2, float * z2)</TT>:
+     set and return the coordinates of the two segment endpoints
+     in the 3D case.
+</UL>
+
+<A NAME="SEGMENT2TRI"></A>
+
+<H3> <TT>Segment2FocusOnTrianglesClass</TT> </H3>
+
+Subclass of <TT>SegmentClass</TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs with 2-dimensional tiles (triangles).
+A triangle is active if it intersects a segment in 2D,
+either in its interior or with its boundary.
+If the dimension of the embedding space is >2, then the extra coordinates
+are not considered. This is equivalent to applying the intersection
+test to the projections of the MT tiles on the <TT>x-y</TT> plane.
+
+<H4>Constructor</H4>
+
+Parameters: the four coordinates <TT>(x1,y1), (x2,y2)</TT> of the segment 
+endpoints.
+
+<A NAME="SEGMENT3FIELD"></A>
+
+<H3> <TT>Segment3FocusOnTriFieldClass</TT> </H3>
+
+Subclass of <TT>SegmentClass</TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs with 2-dimensional tiles (triangles),
+representing scalar fields.
+The MT must be a subclass of 
+<TT><A HREF="#WITHVERTFIELD">WithFieldClass</A></TT> and of
+<TT><A HREF="#WITHTILERR">WithTileErrorClass</A></TT>, and implement 
+functions <TT>TileError</TT> and <TT>Field</TT>.
+<P>
+
+The focus entity is embedded in the 3D space that contains the graph of the
+field.
+It consists of the locus of points that are located on or above a segment
+in 3D (all points <TT>(x,y,z)</TT> such that a point <TT>(x,y,s)</TT> 
+belongs to the segment, with <TT>s &lt = z</TT>).
+A tile is considered as active if it intersects the above locus of points.
+This condition is useful for testing the visibility between two points on a
+terrain.
+The loose evaluation takes tile errors into account.
+
+<H4>Constructor</H4>
+
+Parameters: an object of class <TT>WithFieldClass</TT>, an object of
+class <TT>WithTileErrorClass</TT> (both will be the MT on which the focus
+condition must be applied), the six coordinates 
+<TT>(x1,y1,z1), (x2,y2,z2)</TT> of the segment endpoints.
+
+<A NAME="LINE"></A>
+
+<H3> <TT>LineClass</TT> </H3>
+
+<H4>Meaning</H4>  
+
+A polygonal line embedded in <TT>d</TT>-dimensional space, for generic <TT>d</TT>.
+
+<H4>Constructor</H4>
+
+Parameters: the dimension of the embedding space.
+The resulting polygonal line is empty (it has no points).
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>int LineDim(void)</TT>: return the dimension of the embedding
+     space.
+<LI> <TT>int NumPoints(void)</TT>: return the number of points defining
+     the polyline.
+<LI> <TT>void SetPoint(int i, float * coord),
+     void ThePoint(int i, float * coord)</TT>: set and return
+     the coordinates of the <TT>i</TT>-th point, given as an array
+     of as many floats as the dimension of the embedding space.
+<LI> <TT>void SetPoint(int i, float x, float y),
+     void ThePoint(int i, float * x, float * y)</TT>: set and return
+     the coordinates of the <TT>i</TT>-th point, in the 2D case.
+<LI> <TT>void SetPoint(int i, float x, float y, float z),
+     void ThePoint(int i, float * x, float * y, float * z)</TT>: set and
+     return the coordinates of the <TT>i</TT>-th point, in the 3D case.
+</UL>
+
+<A NAME="LINE2TRI"></A>
+
+<H3> <TT>Line2FocusOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#LINE">LineClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Focus condition for MTs with 2-dimensional tiles (triangles).
+A tile is active if it intersects a polygonal line in two dimensions,
+either in its interior or in its boundary.
+If the dimension of the embedding space is >2, then the extra coordinates
+are not considered.
+The strict and loose evaluation modes are the same.
+
+<H4>Constructor</H4>
+
+Parameters: 
+the number of points on the line (= number of segment, plus one), two arrays
+containing their <TT>x</TT> and <TT>y</TT> coordinates, respectively.
+
+<A NAME="PTDIST"></A>
+
+<H3> <TT>PointDistClass</TT> </H3>
+
+Subclass of <TT><A HREF="#POINT">PointClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+A class that computes the (squared) distance of a tile from a point.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>float 
+     SquaredDistanceTriangle2(MT_MultiTesselation m, MT_INDEX t)</TT>: 
+     return the exact squared distance for triangles when the reference
+     point is in 2D.
+<LI> <TT>float
+     ApproxSquaredDistanceTriangle3(MT_MultiTesselation m, MT_INDEX t)</TT>:
+     return the approximated squared distance for triangles when the
+     reference point is in 3D.
+<LI> <TT>float
+     ApproxSquaredDistanceTetra3(MT_MultiTesselation m, MT_INDEX t)</TT>:
+     return the approximated squared distance for tetrahedra when the
+     reference point is in 3D.
+</UL>
+
+More functions will be added as soon as they are developed.
+Approximated functions output the minimum among the
+distances from the vertices and from the center of the tile (while the
+true minimum distance may occur inside the tile, and be smaller).
+
+<A NAME="RANGE"></A>
+
+<H3> <TT>RangeClass</TT> </H3>
+
+Subclass of <TT><A HREF="#PTDIST">PointDistClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+The locus of points in <TT>d</TT> dimensions whose distance from a reference
+point, called center, is smaller than a given value, called radius.
+
+<H4>Constructor</H4>
+
+Parameters: the number of dimensions of the space, and the radius.
+The resulting range is centered at the origin.
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>float SetRadius(float r), float TheRadius(void)</TT>:
+     set and return the radius of the range.
+</UL>
+
+<A NAME="RANGE2TRI"></A>
+
+<H3> <TT>Range2FocusOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#RANGE">RangeClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>
+
+Focus condition for MTs with 2-dimensional tiles (triangles).
+A tile is active if it intersects a 2D range, i.e., a circle in
+the <TT>x-y</TT> plane. 
+If the embedding space has more than two dimensions, only the first
+two vertex coordinates are considered.
+
+<H4>Constructor</H4>
+
+Parameters: the two coordinates <TT>(x,y)</TT> of the center, and the radius.
+
+<H4>Functions</H4>
+
+<A NAME="RANGE3TRI"></A>
+
+<H3> <TT>Range3FocusOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#RANGE">RangeClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs with 2-dimensional tiles (triangles)
+embedded in at least 3 dimensions, with approximation errors
+associated with their tiles.
+The MT must belong to a subclasse of <TT>WithTileErrorClass</TT>
+which implements function <TT>TileError</TT>.
+<P>
+
+A tile is active if it intersects a 3D range, i.e., a sphere in
+3D space. 
+If the embedding space has more than three dimensions, only the first
+three vertex coordinates are considered.
+The loose evaluation mode takes approximation errors into account.
+
+<H4>Constructor</H4>
+
+Parameters: a pointer to an object of class <TT>WithTileErrorClass</TT>,
+the center <TT>(x,y,z)</TT> and the radius r of the sphere.
+
+<A NAME="RANGE3TETRA"></A>
+
+<H3> <TT>Range3FocusOnTetrahedraClass</TT> </H3>
+
+Subclass of <TT><A HREF="#RANGE">RangeClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs with 3-dimensional tiles (tetrahedra).
+A tile is active if it intersects a 3D range, i.e., a sphere in
+3D space.
+If the embedding space has more than three dimensions, only the first
+three vertex coordinates are considered.
+The strict and loose evaluation mode are the same.
+
+<H4>Constructor</H4>
+
+Parameters: the center <TT>(x,y,z)</TT> and the radius 
+<TT>r</TT> of the sphere.
+
+<A NAME="WEDGE"></A>
+
+<H3> <TT>WedgeClass</TT> </H3>
+
+<H4>Meaning</H4>  
+
+A wedge in <TT>d</TT> dimensions, for generic <TT>d</TT>. Examples are an
+angular sector in 2D, an unbounded pyramid with four sides in 3D.
+This is useful in visualization to represent the view frustum: the extracted
+tesselation will be restricted to lie inside the view frustum.
+
+<H4>Constructor</H4>
+
+Parameters: the dimension of the embedding space.
+The vertex of the resulting wedge is the origin, 
+the reference point lies at distance <TT>1</TT> from the
+origin in the direction of the last coordinate axis of the space.
+The reference directions for the opening angles are undefined.
+All opening angles are zero (the wedge is a half-line).
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>int WedgeDim(void)</TT>: return the number of coordinates of 
+     the embedding space.
+
+<LI> <TT>void TheVertex(float * coord),
+     void SetVertex(float * coord)</TT>:
+     return and set the vertex of the wedge. Parameter <TT>coord</TT>
+     is an array of as many float as the dimension of the embedding space.
+<LI> <TT>void TheVertex(float * x, float * y),
+     void SetVertex(float x, float y)</TT>:
+     return and set the vertex of the wedge, in the 2D case.
+
+<LI> <TT>void TranslateVertex(float * incr)</TT>:
+     translate the vertex of the wedge of a translation vector,
+     given as an array of as many floats as the dimension of the space.
+<LI> <TT>void TranslateVertex(float dx, float dy)</TT>:
+     translate the vertex of the wedge of a translation vector,
+     in the 2D case.
+
+<LI> <TT>void TheAxisPoint(float * coord, float dist = 1.0)</TT>:
+     return a point lying on the medial axis of the wedge,
+     the point lies at distance <TT>dist</TT> from the vertex of the wedge.
+<LI> <TT>void SetAxisDir(float * dir), 
+     void TheAxisDir(float * dir)</TT>: set / return
+     the medial axis of the 
+     wedge by means of the directional coefficients,
+     given as an array of as many floats as the dimension of the space.
+<LI> <TT>void SetAxisPoint(float * coord)</TT>: 
+     set the medial axis of the wedge by
+     means of a point, the medial axis is defined as the half-line joining
+     the vertex of the wedge to such point;
+     the point is given as an array of as many floats as the dimension of
+     the space.
+
+<LI> <TT>void TheAxisPoint(float * x, float * y, float dist = 1.0),
+     void SetAxisPoint(float x, float y),
+     void TheAxisDir(float * dx, float * dy)
+     void SetAxisDir(float dx, float dy)</TT>:
+     shortcuts for wedges in 2D.
+
+<LI> <TT>inline float TheAngle(int i), void SetAngle(int i, float a)</TT>:
+     return and set the <TT>i</TT>-th opening angle,
+     the angle must be between <TT>0</TT> and <TT>PI/2</TT>.
+
+<LI> <TT>void TheLeftPoint(float * x, float * y, float dist = 1.0),
+     void TheRightPoint(float * x, float * y, float dist = 1.0)</TT>:
+     for wedges in 2D, return a point lying on the left and on the right
+     side of the wedge at distance <TT>dist</TT> from the vertex.
+</UL>
+
+<A NAME="WEDGE2TRI"></A>
+
+<H3> <TT>Wedge2FocusOnTrianglesClass</TT> </H3>
+
+Subclass of <TT><A HREF="#WEDGE">WedgeClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs with 2-dimensional tiles (triangles).
+A tile is active if it intersects a 2-dimensional wedge, i.e.,
+an angular sector in 2D.
+If the dimension of the embedding space is >2, then the extra coordinates
+are not considered.
+The strict and loose evaluation modes are the same.
+
+<H4>Constructor</H4>
+
+Parameters: the coordinates <TT>(xv,yv)</TT> of the vertex,
+the coordinates <TT>(xr,yr)</TT> of a reference point, and the opening angle.
+The medial axis of resulting wegde is the line joining
+<TT>(xv,yv)</TT> to <TT>(xr,yr)</TT>.
+
+<A NAME="FIELDVAL"></A>
+
+<H3> <TT>FieldValClass</TT> </H3>
+
+<H4>Meaning</H4>  
+
+A set of field values.
+
+<H4>Constructor</H4>
+
+Parameters: 
+<UL>
+<LI> One float, the resulting set contains just one field value.
+<LI> A counter and an array containing as many floats as the counter.
+<LI> A counter, an initial value and an increment,
+     the resulting set has as many values as the counter, starting from
+     the initial value and equally spaced according to the increment.
+</UL>
+
+<H4>Functions</H4>
+
+<UL>
+<LI> <TT>int FieldValNum(void)</TT>: return the number of values in the set.
+<LI> <TT>void SetFieldVal(int num, float * val)</TT>: 
+     fill the set with <TT>num</TT> values
+     contained in the given array.
+<LI> <TT>void SetFieldVal(int num, float val0, float step)</TT>:
+     fill the set with <TT>num</TT> values,
+     where the first one is <TT>val0</TT>,
+     and the <TT>i</TT>-th one is <TT>val0 + (i*step)</TT>.
+<LI> <TT>void SetFieldVal(int i, float val),
+     float TheFieldVal(int i)</TT>: set and return the <TT>i</TT>-th
+     value in the set.
+</UL>
+
+<A NAME="FIELDVALFCS"></A>
+
+<H3> <TT>FieldValFocusClass</TT> </H3>
+
+Subclass of <TT><A HREF="#FIELDVAL">FieldValClass</A></TT> and of
+<TT><A HREF="core.html#COND">MT_CondClass</A></TT>.
+
+<H4>Meaning</H4>  
+
+Focus condition for MTs representing scalar fields, with approximation
+errors associated with their tiles.
+The MT must belong to a subclass of 
+<TT><A HREF="#WITHFIELD">WithFieldClass</A></TT> and 
+<TT><A HREF="#WITHTILERR">WithTileErrorClass</A></TT>, which implements
+functions <TT>TileError</TT> and <TT>VertexField</TT>.                            
+<P>
+
+A tile is active if it contains at least one of a set of field
+values.
+The field values of the vertices are interpolated linearly within
+the tile.
+The loose evaluation mode takes approximation errors of tiles into
+account.
+
+<H4>Constructor</H4>
+
+Parameters: 
+a pointer to an object of class <TT>WithFieldClass</TT>, 
+and one to an object of class <TT>WithTileErrorClass</TT> 
+(both will be the MT on which the condition must be evaluated),
+plus the same parameters accepted by the 
+constructors of class <TT>FieldValClass</TT>.
+
+<H4>Utility Functions</H4>
+
+The following utility function is defined at top-level and
+it is useful in conjuction with the use of a <TT>FieldValFocusClass</TT>
+on <TT>WithFieldClass</TT> with two-dimensional tiles.
+
+<UL>
+<LI> <TT>int HeightSegment (MT_MultiTesselation m, WithFieldClass * mf,
+                      MT_INDEX t, float val,
+                      float *x1, float *y1, float * x2, float *y2)</TT>:
+     compute the segment <TT>(x1,y1)-(x2,y2)</TT>
+     intersection of triangle <TT>t</TT> with plane at field value equal to
+     <TT>val</TT>;
+     return <TT>1</TT> if the intersection is a segment (the intersection
+     exists and does not degenerate into a point), <TT>0</TT> otherwise.
+</UL>
+
+Parameters <TT>m</TT> and <TT>mf</TT> point to the same object, seen under
+its two relevant superclasses.
+
+</BODY>
+
+</HTML>
